@@ -22,7 +22,7 @@ public class LinkModule extends Module
                 "\\s*(New snap:)?\\s*(https?://)?(www.)?european\\.shitposting\\.agency/snaps/.*");
 
     @Override
-    public void privMsg(String prefix,String dest,String msg) {
+    public void privMsg(String prefix,String dest,String msg,long t) {
         if (snapPattern.matcher(msg).matches()) {
             irc.sendPrivMessage(dest,
                     msg.replaceAll("european\\.shitposting\\.agency","95.85.2.91"));

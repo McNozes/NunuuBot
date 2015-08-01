@@ -20,7 +20,7 @@ public class HelloModule extends Module
         Pattern.compile("[oO][lL][aáAÁ][ ,]* +" + config.getNickname());
 
     @Override
-    public void privMsg(String prefix,String dest,String msg) {
+    public void privMsg(String prefix,String dest,String msg,long t) {
         String nick = prefix.split("!")[0];
         if (helloPattern.matcher(msg).matches()) {
             irc.sendPrivMessage(dest,"Hello, " + nick + "!");

@@ -11,7 +11,7 @@ public class VoteModule extends Module
     }
 
     @Override
-    public void privMsg(String prefix,String dest,String msg) {
+    public void privMsg(String prefix,String dest,String msg,long t) {
         String[] source = prefix.split(":|!",1);
 
     }

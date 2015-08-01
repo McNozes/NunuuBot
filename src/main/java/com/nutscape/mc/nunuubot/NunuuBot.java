@@ -98,16 +98,16 @@ public class NunuuBot {
 
     // ----------
 
-    private void processNotice(String prefix,String dest,String msg) {
+    private void processNotice(String prefix,String dest,String msg,long t) {
         for (Map.Entry<String,Module> e : modules.entrySet()) {
             Module m = e.getValue();
             if (m instanceof NoticeReceiver) {
-                ((NoticeReceiver)m).notice(prefix,dest,msg);
+                ((NoticeReceiver)m).notice(prefix,dest,msg,t);
             }
         }
     }
 
-    private void processMessage(String prefix,String dest,String msg)
+    private void processMessage(String prefix,String dest,String msg,long t)
     {
         if (msg.equals("\001VERSION\001")) {
             irc.sendNotice(prefix,"\001VERSION " + config.version
@@ -130,11 +130,11 @@ public class NunuuBot {
 
         // Send message to all modules.
         for (Map.Entry<String,Module> e : modules.entrySet()) {
-            e.getValue().privMsg(prefix,dest,msg);
+            e.getValue().privMsg(prefix,dest,msg,t);
         }
     }
 
-    private void processLine(String line) throws IOException
+    private void processLine(String line,long t) throws IOException
     {
         String prefix;
         String command;
@@ -164,9 +164,9 @@ public class NunuuBot {
                 String dest = parts[0];
                 String msg = parts[1].substring(1);
                 if (command.equals("PRIVMSG")) {
-                    processMessage(prefix,dest,msg);
+                    processMessage(prefix,dest,msg,t);
                 } else {
-                    processNotice(prefix,dest,msg);
+                    processNotice(prefix,dest,msg,t);
                 }
 
                 break;
@@ -203,13 +203,15 @@ public class NunuuBot {
 
             while (true) {
                 String line;
+                long millis;
                 while (true) { // try again if interrupted
                     try {
                         line = msgQueue.take();
+                        millis = System.currentTimeMillis(); 
                         break;
                     } catch (InterruptedException e) { }
                 }
-                processLine(line);
+                processLine(line,millis);
             }
 
         } catch (IOException e) {

@@ -82,6 +82,6 @@ public class IRC
     }
 
     public static String getNick(String prefix) {
-        return prefix.replaceAll("!.*","");
+        return prefix.replaceAll("!.*$","");
     }
 }

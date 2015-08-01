@@ -23,7 +23,7 @@ public abstract class Module
         // Do nothing
     }
 
-    public abstract void privMsg(String prefix,String dest,String msg);
+    public abstract void privMsg(String prefix,String dest,String msg,long t);
 
     protected boolean match(Pattern p,String s) {
         return p.matcher(s).matches();
