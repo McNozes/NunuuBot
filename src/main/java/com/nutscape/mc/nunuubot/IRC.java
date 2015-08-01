@@ -26,6 +26,8 @@ public class IRC
 
     // ---------------------
 
+    // IRC
+
     public void sendUser(String nick,String mode,String realname) {
         send("USER " + nick + " " + mode +  " * :" + realname);
     }
@@ -65,7 +67,7 @@ public class IRC
         send("PING " + target);    
     }
 
-    public void sendMessage(String dest,String msg) {
+    public void sendPrivMessage(String dest,String msg) {
         send("PRIVMSG " + getNick(dest) + " :" + msg);
     }
 
@@ -74,7 +76,7 @@ public class IRC
     }
 
     public void nickservIdentify(String password) {
-        sendMessage("Nickserv","identify " + password);
+        sendPrivMessage("Nickserv","identify " + password);
     }
 
     public static String[] decomp(String host) {
@@ -85,15 +87,6 @@ public class IRC
         return prefix.replaceAll("!.*","");
     }
 
-    private class Limiter {
-        private long nanoWait = 1;
+    // CTCP
 
-        void inc() {
-            nanoWait *= 2;
-        }
-
-        void dec() {
-            nanoWait /= 2;
-        }
-    }
 }

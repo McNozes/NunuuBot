@@ -116,7 +116,7 @@ public class NunuuBot {
             } else {
                 // Redirect messages to admins
                 for (String ad : config.admins) {
-                    irc.sendMessage(ad,dest + ": " + msg);
+                    irc.sendPrivMessage(ad,dest + ": " + msg);
                 }
             }
             return;
@@ -279,7 +279,7 @@ public class NunuuBot {
                 try {
                     loadModule(cmd[1]);
                 } catch (ModuleInstantiationException e) {
-                    irc.sendMessage(prefix,
+                    irc.sendPrivMessage(prefix,
                             "error: " + e.getCause().getMessage());
                 }
                 break;
@@ -287,12 +287,12 @@ public class NunuuBot {
                 if (!config.useClassReloading)
                     return;
                 if (!unloadModule(cmd[1])) {
-                    irc.sendMessage(prefix, "error unloading module");
+                    irc.sendPrivMessage(prefix, "error unloading module");
                 }
                 break;
             case "msg":
                 String[] parts = cmd[1].split(" +",2);
-                irc.sendMessage(parts[0],parts[1]);
+                irc.sendPrivMessage(parts[0],parts[1]);
                 break;
             case "join":
                 irc.join(cmd[1]);
@@ -300,7 +300,7 @@ public class NunuuBot {
             case "part":
                 irc.part(cmd[1]);
             case "version":
-                irc.sendMessage(cmd[1],"\001VERSION\001");
+                irc.sendPrivMessage(cmd[1],"\001VERSION\001");
             default:
                 break;
         }

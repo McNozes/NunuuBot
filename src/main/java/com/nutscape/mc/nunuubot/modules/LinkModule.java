@@ -24,7 +24,7 @@ public class LinkModule extends Module
     @Override
     public void privMsg(String prefix,String dest,String msg) {
         if (snapPattern.matcher(msg).matches()) {
-            irc.sendMessage(dest,
+            irc.sendPrivMessage(dest,
                     msg.replaceAll("european\\.shitposting\\.agency","95.85.2.91"));
         }
     }

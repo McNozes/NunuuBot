@@ -24,9 +24,9 @@ public class HelloModule extends Module
         System.out.println(config.getNickname());
         String nick = prefix.split("!")[0];
         if (helloPattern.matcher(msg).matches()) {
-            irc.sendMessage(dest,"Hello, " + nick + "!");
+            irc.sendPrivMessage(dest,"Hello, " + nick + "!");
         } else if (olaPattern.matcher(msg).matches()) {
-            irc.sendMessage(dest,"Olá, " + nick + "!");
+            irc.sendPrivMessage(dest,"Olá, " + nick + "!");
         }
     }
 }
