@@ -1,2 +1,2 @@
 # NunuuBot
-IRC bot in java
+IRC bot in Java
