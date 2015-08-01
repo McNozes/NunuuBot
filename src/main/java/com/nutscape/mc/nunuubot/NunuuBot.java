@@ -57,10 +57,16 @@ public class NunuuBot {
         private List<String> admins = Arrays.asList(new String[] {
             "McNozes!~McNozes@chico.diogo"
         });
+
+        private void teste() {
+        }
     }
 
     class InitModuleConfig implements ModuleConfig {
         public String getNickname() {
+            return config.nickname;
+        }
+        public String getSpecialChar() {
             return config.nickname;
         }
     }
@@ -95,8 +101,8 @@ public class NunuuBot {
     private void processNotice(String prefix,String dest,String msg) {
         for (Map.Entry<String,Module> e : modules.entrySet()) {
             Module m = e.getValue();
-            if (m instanceof Notices) {
-                ((Notices)m).getNotice(prefix,dest,msg);
+            if (m instanceof NoticeReceiver) {
+                ((NoticeReceiver)m).notice(prefix,dest,msg);
             }
         }
     }
@@ -166,12 +172,7 @@ public class NunuuBot {
                 break;
 
             case "PONG":
-                for (Map.Entry<String,Module> e : modules.entrySet()) {
-                    Module m = e.getValue();
-                    if (m instanceof Pinger) {
-                        ((Pinger)m).getPonged(prefix);
-                    }
-                }
+                System.out.println("Received pong...");
                 break;
 
             case "001":
@@ -231,10 +232,10 @@ public class NunuuBot {
         try {
             Class<?> cl;
             if (config.useClassReloading) {
-                // We must use a new ClassLoader each time, otherwise the
-                // JVM just uses the already loaded class definition for
-                // classes and doesn't take into account changes to class
-                // files.
+                /* We must use a new ClassLoader each time, otherwise the
+                 * JVM just uses the already loaded class definition for
+                 * classes and doesn't take into account changes to class
+                 * files. */
                 ClassLoader parent = ModuleClassLoader.class.getClassLoader();
                 ModuleClassLoader loader = new ModuleClassLoader(parent);
                 cl = loader.loadClass(fullName);

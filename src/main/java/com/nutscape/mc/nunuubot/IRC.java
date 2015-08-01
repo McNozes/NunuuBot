@@ -26,8 +26,6 @@ public class IRC
 
     // ---------------------
 
-    // IRC
-
     public void sendUser(String nick,String mode,String realname) {
         send("USER " + nick + " " + mode +  " * :" + realname);
     }
@@ -86,7 +84,4 @@ public class IRC
     public static String getNick(String prefix) {
         return prefix.replaceAll("!.*","");
     }
-
-    // CTCP
-
 }

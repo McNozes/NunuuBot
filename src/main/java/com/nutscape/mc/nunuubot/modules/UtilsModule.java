@@ -6,76 +6,98 @@ import java.util.Map;
 import java.util.HashMap;
 
 import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.CTCP;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.ModuleConfig;
-import com.nutscape.mc.nunuubot.Pinger;
-import com.nutscape.mc.nunuubot.Notices;
+import com.nutscape.mc.nunuubot.NoticeReceiver;
 
-public class UtilsModule extends Module implements Pinger,Notices
+public class UtilsModule extends Module implements NoticeReceiver
 {
-    private Map<String,Long> pinged = new HashMap<>();
-    private Map<String,String> channels = new HashMap<>();;
+    private CTCP ctcp;
 
-    //private String cmdPrefix = "(" + config.getNickname() + ": +)|" + 
-    //    config.getSpecialChar();
-    private String cmdPrefix = "(" + config.getNickname() + ": +)";
+    private Map<String,String> channels = new HashMap<>();
+
+    private String cmdPrefix =
+        "^((" + config.getNickname() + ": +)|" + config.getSpecialChar() + ")";
 
     public UtilsModule(IRC irc,ModuleConfig config) {
         super(irc,config);
+        this.ctcp = new CTCP(irc);
     }
 
     // ---------
 
-    abstract class ActionPattern {
+    abstract class PatternAction {
         private Pattern pattern;
 
-        public ActionPattern(String p) {
-            this.pattern = Pattern.compile(p);
+        public PatternAction(String pattern) {
+            this.pattern = Pattern.compile(pattern);
         }
 
-        public void accept(String prefix,String dest,String msg) {
-            if (pattern.matcher(msg).matches())
+        public PatternAction(Pattern pattern) {
+            this.pattern = pattern;
+        }
+
+        boolean matches(String msg) {
+            return pattern.matcher(msg).matches();
+        }
+
+        public boolean accept(String prefix,String dest,String msg) {
+            if (pattern.matcher(msg).matches()) {
                 action(prefix,dest,msg);
+                return true;
+            }
+            return false;
         }
 
-        public abstract void action(String prefix,String dest,String msg);
+        abstract void action(String prefix,String dest,String msg);
     }
 
-    private ActionPattern ping = new ActionPattern(
+    private PatternAction pingCommand = new PatternAction(
             cmdPrefix + "ping( +.*)?") {
         @Override 
         public void action(String prefix,String dest,String msg) {
             // Figure out who is being pinged.
             String target = null;
-            String[] parts = msg.split(" +");
-            if (parts.length == 3) {
-                target = parts[2];
+            String[] parts = msg.replaceAll(cmdPrefix,"").split(" +");
+            if (parts.length == 2) {
+                target = parts[1];
             } else {
                 target = prefix;
             }
-            // Save in maps.
+            // Save in maps and do ping.
             channels.put(target,dest);
-            pinged.put(target,System.currentTimeMillis());
-            irc.ping(target);
+            Long timestamp = System.currentTimeMillis();
+            ctcp.query(CTCP.Query.PING,target,timestamp.toString());
+        }
+    };
+
+    private PatternAction pingReply = new PatternAction(
+            CTCP.Query.PING.replyPattern) {
+        @Override
+        public void action(String prefix,String dest,String msg) {
+            String arg = CTCP.getArgs(CTCP.Query.PING,msg);
+            Long time = Long.valueOf(arg);
+            Long delta = System.currentTimeMillis() - time;
+            irc.sendPrivMessage(channels.get(IRC.getNick(prefix)),
+                        delta + " ms");
         }
     };
 
     @Override
     public void privMsg(String prefix,String dest,String msg) {
-        ping.accept(prefix,dest,msg);
-    }
-
-    @Override
-    public void getPonged(String prefix) {
-        Long time = pinged.get(prefix);
-        if (time != null) {
-
+        if (pingCommand.accept(prefix,dest,msg)) {
+            return;
         }
+        // add other things ...
     }
 
     @Override
-    public void getNotice(String prefix,String dest,String msg) {
+    public void notice(String prefix,String dest,String msg) {
+        if (pingReply.accept(prefix,dest,msg)) {
+            return;
+        }
+        // add other things ...
     }
-
 }
 

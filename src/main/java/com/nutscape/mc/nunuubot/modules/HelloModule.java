@@ -21,7 +21,6 @@ public class HelloModule extends Module
 
     @Override
     public void privMsg(String prefix,String dest,String msg) {
-        System.out.println(config.getNickname());
         String nick = prefix.split("!")[0];
         if (helloPattern.matcher(msg).matches()) {
             irc.sendPrivMessage(dest,"Hello, " + nick + "!");
