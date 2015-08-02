@@ -81,7 +81,12 @@ public class IRC
         return host.split("!|@",3);
     }
 
+    // TODO: change to getNickname
     public static String getNick(String prefix) {
         return prefix.replaceAll("!.*$","");
+    }
+
+    public static String getHost(String prefix) {
+        return prefix.replaceAll(".*@","");
     }
 }

@@ -60,11 +60,17 @@ public class NunuuBot {
     }
 
     class InitModuleConfig implements ModuleConfig {
+        private String cmdPrefix = "^((" + getNickname() +
+            "[:,-] +)|" + getSpecialChar() + ")";
+
         public String getNickname() {
             return config.nickname;
         }
         public String getSpecialChar() {
             return config.nickname;
+        }
+        public String getCmdPrefix() {
+            return cmdPrefix;
         }
     }
 

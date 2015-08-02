@@ -4,44 +4,46 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.CTCP;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.ModuleConfig;
 import com.nutscape.mc.nunuubot.NoticeReceiver;
-import com.nutscape.mc.nunuubot.modules.utils.ActionPattern;
 import com.nutscape.mc.nunuubot.modules.utils.Action;
-import com.nutscape.mc.nunuubot.modules.utils.QueryAction;
-import com.nutscape.mc.nunuubot.modules.utils.ReplyAction;
+import com.nutscape.mc.nunuubot.modules.utils.CommandPattern;
+import com.nutscape.mc.nunuubot.modules.utils.ReplyPattern;
+import com.nutscape.mc.nunuubot.modules.utils.QueryPairPattern;
 
 public class UtilsModule extends Module implements NoticeReceiver
 {
     private Map<String,String> CHANNELS = new HashMap<>();
     private CTCP ctcp;
 
-    private String cmdPrefix =
-        "^((" + config.getNickname() + "[:,-] +)|" + config.getSpecialChar() + ")";
+    private List<CommandPattern> commands;
+    private List<ReplyPattern> replies;
 
-    private ActionPattern pingCommand = new ActionPattern(
-            cmdPrefix + "ping" + "( +.*)?",new UserAction(cmdPrefix,
-                new QueryAction(CHANNELS,new PingAction())));
-
-    private ActionPattern pingReply = new ActionPattern(
-            CTCP.Query.PING.replyPattern,
-            new ReplyAction(CHANNELS,new PingReplyAction()));
-
-    private ActionPattern versionCommand = new ActionPattern(
-            cmdPrefix + "version" + "( +.*)?",new UserAction(cmdPrefix,
-                new QueryAction(CHANNELS,new VersionAction())));
-
-    private ActionPattern versionReply = new ActionPattern(
-            CTCP.Query.VERSION.replyPattern,
-            new ReplyAction(CHANNELS,new VersionReplyAction()));
+    private void addQueryPair(String word,Pattern repPat,Action c,Action r) {
+        String prefix = config.getCmdPrefix();
+        QueryPairPattern q = new QueryPairPattern(prefix,word,repPat,c,r);
+        this.commands.add(q);
+        this.replies.add(q);
+    }
 
     public UtilsModule(IRC irc,ModuleConfig config) {
         super(irc,config);
         this.ctcp = new CTCP(irc);
+
+        this.commands = new ArrayList<CommandPattern>();
+        this.replies = new ArrayList<ReplyPattern>();
+
+        addQueryPair("ping",CTCP.Query.PING.replyPattern,
+                new PingAction(),new PingReplyAction());
+
+        addQueryPair("version",CTCP.Query.VERSION.replyPattern,
+                new VersionAction(),new VersionReplyAction());
     }
 
     // ---------
@@ -71,31 +73,25 @@ public class UtilsModule extends Module implements NoticeReceiver
 
     class VersionReplyAction extends Action {
         public void doAction(String nick,String channel,String msg,long t) {
-            String arg = CTCP.getArgs(CTCP.Query.PING,msg);
+            String arg = CTCP.getArgs(CTCP.Query.VERSION,msg);
             irc.sendPrivMessage(channel,nick + ": " + arg);
         }
     }
 
     @Override
     public void privMsg(String prefix,String dest,String msg,long t) {
-        if (pingCommand.accept(prefix,dest,msg,t)) {
-            return;
+        for (CommandPattern command : commands) {
+            if (command.acceptCommand(prefix,dest,msg,t))
+                return;
         }
-        if (versionCommand.accept(prefix,dest,msg,t)) {
-            return;
-        }
-        // add other things ...
     }
 
     @Override
     public void notice(String prefix,String dest,String msg,long t) {
-        if (pingReply.accept(prefix,dest,msg,t)) {
-            return;
+        for (ReplyPattern reply : replies) {
+            if (reply.acceptReply(prefix,dest,msg,t))
+                return;
         }
-        if (versionReply.accept(prefix,dest,msg,t)) {
-            return;
-        }
-        // add other things ...
     }
 }
 

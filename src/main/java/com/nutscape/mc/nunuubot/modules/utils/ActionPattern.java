@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 /* Class for doing an action when a pattern is matched */
-public class ActionPattern {
+public class ActionPattern implements CommandPattern {
     protected Pattern pattern;
     protected Action action;
 
@@ -18,7 +18,7 @@ public class ActionPattern {
     }
     // ---------------
 
-    public boolean accept(String prefix,String dest,String msg,long t) {
+    public boolean acceptCommand(String prefix,String dest,String msg,long t) {
         if (pattern.matcher(msg).matches()) {
             action.doAction(prefix,dest,msg,t);
             return true;
