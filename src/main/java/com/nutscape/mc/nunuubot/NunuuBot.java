@@ -32,7 +32,7 @@ public class NunuuBot {
         .getCanonicalName().replaceAll("[.][^.]+$","")
         + "." + MODULES_DIR.replaceAll("/",".");
 
-    static class Config {    // TODO: move into config file
+    public static class Config {    // TODO: move into config file
         private String nickname = "NunuuBot";
         private String realname = "github.com/McNozes/NunuuBot";
         private String mode = "0";
@@ -57,9 +57,6 @@ public class NunuuBot {
         private List<String> admins = Arrays.asList(new String[] {
             "McNozes!~McNozes@chico.diogo"
         });
-
-        private void teste() {
-        }
     }
 
     class InitModuleConfig implements ModuleConfig {

@@ -20,7 +20,7 @@ public class CTCP {
         /* Pattern matches if a certain message is a valid reply to a 
          * CTCP query. */
         public final Pattern replyPattern = Pattern.compile(
-                '\001' + toString() + "( +[^ ]+)?\001");
+                '\001' + toString() + "( +[^ ].*)?\001");
     };
 
     private IRC irc;
