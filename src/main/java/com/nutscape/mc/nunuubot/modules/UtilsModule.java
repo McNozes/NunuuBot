@@ -19,17 +19,14 @@ import com.nutscape.mc.nunuubot.modules.utils.QueryPairPattern;
 
 public class UtilsModule extends Module implements NoticeReceiver
 {
-    private Map<String,String> CHANNELS = new HashMap<>();
     private CTCP ctcp;
 
     private List<CommandPattern> commands;
     private List<ReplyPattern> replies;
 
-    private void addQueryPair(String word,Pattern repPat,Action c,Action r) {
-        String prefix = config.getCmdPrefix();
-        QueryPairPattern q = new QueryPairPattern(prefix,word,repPat,c,r);
-        this.commands.add(q);
-        this.replies.add(q);
+    private void addQueryPair(QueryPairPattern pair) {
+        commands.add(pair);
+        replies.add(pair);
     }
 
     public UtilsModule(IRC irc,ModuleConfig config) {
@@ -38,12 +35,38 @@ public class UtilsModule extends Module implements NoticeReceiver
 
         this.commands = new ArrayList<CommandPattern>();
         this.replies = new ArrayList<ReplyPattern>();
+        String cmdPrefix = config.getCmdPrefix();
 
-        addQueryPair("ping",CTCP.Query.PING.replyPattern,
-                new PingAction(),new PingReplyAction());
+        // Add CTCP queries
 
-        addQueryPair("version",CTCP.Query.VERSION.replyPattern,
-                new VersionAction(),new VersionReplyAction());
+        for (CTCP.Query query : CTCP.Query.values()) {
+            if (query == CTCP.Query.PING) {
+                addQueryPair(new QueryPairPattern(cmdPrefix,"ping",
+                            CTCP.Query.PING.replyPattern,
+                            new PingAction(),new PingReplyAction()));
+            } else {
+                String word = query.toString();  // case is not important
+                Pattern replyPattern = query.replyPattern;
+
+                Action cAct = new Action() {
+                    public void doAction(String target,String dest,
+                            String msg,long t) {
+                        ctcp.query(query,target);
+                    }
+                };
+
+                Action rAct = new Action() {
+                    public void doAction(String target,String dest,
+                            String msg,long t) {
+                        String arg = CTCP.getArgs(query,msg);
+                        irc.sendPrivMessage(dest,target + ": " + arg);
+                    }
+                };
+
+                addQueryPair(new QueryPairPattern(cmdPrefix,word,
+                            replyPattern,cAct,rAct));
+            }
+        }
     }
 
     // ---------
@@ -62,19 +85,6 @@ public class UtilsModule extends Module implements NoticeReceiver
             Long sentTime = Long.valueOf(arg);
             Long delta = t - sentTime;
             irc.sendPrivMessage(channel,nick + ": " + delta + "ms");
-        }
-    }
-
-    class VersionAction extends Action {
-        public void doAction(String target,String dest,String msg,long t) {
-            ctcp.query(CTCP.Query.VERSION,target);
-        }
-    }
-
-    class VersionReplyAction extends Action {
-        public void doAction(String nick,String channel,String msg,long t) {
-            String arg = CTCP.getArgs(CTCP.Query.VERSION,msg);
-            irc.sendPrivMessage(channel,nick + ": " + arg);
         }
     }
 
