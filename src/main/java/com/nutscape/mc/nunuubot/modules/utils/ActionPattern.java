@@ -18,6 +18,7 @@ public class ActionPattern implements CommandPattern {
     }
     // ---------------
 
+    @Override
     public boolean acceptCommand(String prefix,String dest,String msg,long t) {
         if (pattern.matcher(msg).matches()) {
             action.doAction(prefix,dest,msg,t);

@@ -22,10 +22,12 @@ public class QueryPairPattern implements CommandPattern, ReplyPattern {
         this.reply = new ActionPattern(replyPat,replyAction);
     }
 
+    @Override
     public boolean acceptCommand(String prefix,String dest,String msg,long t){
         return comnd.acceptCommand(prefix,dest,msg,t);
     }
 
+    @Override
     public boolean acceptReply(String prefix,String dest,String msg,long t){
         return reply.acceptCommand(prefix,dest,msg,t);
     }

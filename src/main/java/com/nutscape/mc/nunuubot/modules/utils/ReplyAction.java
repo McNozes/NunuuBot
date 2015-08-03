@@ -12,6 +12,7 @@ public class ReplyAction extends Action {
         this.map = map;
     }
 
+    @Override
     public void doAction(String target,String dest,String msg,long t) {
         String nick = IRC.getNick(target);
         String channel = map.get(nick.toLowerCase());

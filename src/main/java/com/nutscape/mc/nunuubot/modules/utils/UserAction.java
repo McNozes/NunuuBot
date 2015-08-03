@@ -9,6 +9,7 @@ public class UserAction extends Action {
         this.cmdPrefix = cmdPrefix;
     }
 
+    @Override
     public void doAction(String prefix,String dest,String msg,long t) {
         // Figure out who is being queried.
         String target = null;

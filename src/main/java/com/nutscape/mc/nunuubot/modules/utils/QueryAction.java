@@ -10,6 +10,7 @@ public class QueryAction extends Action {
         this.map = map;
     }
 
+    @Override
     public void doAction(String target,String dest,String msg,long t) {
         map.put(target.toLowerCase(),dest); // note: lowercase
         nextAction.doAction(target,dest,msg,t);
