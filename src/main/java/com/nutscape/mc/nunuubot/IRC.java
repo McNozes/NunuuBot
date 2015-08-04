@@ -54,9 +54,6 @@ public class IRC
         send("MODE " + "-" + m);    
     }
 
-    public void recievePong(String subject) {
-    }
-
     public void pong(String target) {
         send("PONG " + target);    
     }

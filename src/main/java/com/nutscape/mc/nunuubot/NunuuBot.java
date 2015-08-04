@@ -137,39 +137,43 @@ public class NunuuBot {
         }
     }
 
-    private void processLine(String line,long t) throws IOException
+    private void processLine(String line,long timestamp) throws IOException
     {
+        /* Each line is composed of an optional prefix, a command, and
+         * arguments. */
         String prefix;
         String command;
-        String rest;
-        if (line.charAt(0) == ':') {   // there's a prefix
+        String arguments;
+
+        /* If the line starts with a ':', then the first 'word' is a prefix */
+        if (line.charAt(0) == ':') {
             String[] cmds = line.split(" +",3);
             prefix = cmds[0].substring(1);
             command = cmds[1];
-            rest = cmds[2];
+            arguments = cmds[2];
         } else {
             String[] cmds = line.split(" +",2);
             prefix = null;
             command = cmds[0];
-            rest = cmds[1];
+            arguments = cmds[1];
         }
         //System.out.println("> " + command);
 
         switch (command)
         {
             case "PING":  // TODO: check if it's my prefix?
-                irc.pong(rest.substring(1));
+                irc.pong(arguments.substring(1));
                 break;
 
             case "NOTICE":
             case "PRIVMSG":
-                String[] parts = rest.split(" ",2);
-                String dest = parts[0];
-                String msg = parts[1].substring(1);
+                String[] parts = arguments.split(" ",2);
+                String destination = parts[0];
+                String message = parts[1].substring(1);
                 if (command.equals("PRIVMSG")) {
-                    processMessage(prefix,dest,msg,t);
+                    processMessage(prefix,destination,message,timestamp);
                 } else {
-                    processNotice(prefix,dest,msg,t);
+                    processNotice(prefix,destination,message,timestamp);
                 }
 
                 break;
