@@ -39,58 +39,83 @@ public class UtilsModule extends Module implements NoticeReceiver
 
         // Add CTCP queries
 
-        for (CTCP.Query query : CTCP.Query.values()) {
-            if (query == CTCP.Query.PING) {
-                addQueryPair(new QueryPairPattern(cmdPrefix,"ping",
-                            CTCP.Query.PING.replyPattern,
-                            new PingAction(),new PingReplyAction()));
-            } else {
-                String word = query.toString();  // case is not important
-                Pattern replyPattern = query.replyPattern;
+        CTCP.Query[] supportedQueries = new CTCP.Query[] {
+            CTCP.Query.VERSION,
+                CTCP.Query.TIME,
+                CTCP.Query.CLIENTINFO
+        };
+        for (CTCP.Query query : supportedQueries) {
+            String word = query.toString();  // case is not important
+            Pattern replyPattern = query.replyPattern;
 
-                Action cAct = new Action() {
-                    @Override
-                    public void doAction(String target,String dest,
-                            String msg,long t) {
-                        ctcp.query(query,target);
-                    }
-                };
+            Action cAct = new Action() {
+                @Override
+                public void doAction(String target,String dest,
+                        String msg,long t) {
+                    ctcp.query(query,target);
+                }
+            };
 
-                Action rAct = new Action() {
-                    @Override
-                    public void doAction(String target,String dest,
-                            String msg,long t) {
-                        String arg = CTCP.getArgs(query,msg);
-                        irc.sendPrivMessage(dest,target + ": " + arg);
-                    }
-                };
+            Action rAct = new Action() {
+                @Override
+                public void doAction(String target,String dest,
+                        String msg,long t) {
+                    String arg = CTCP.getArgs(query,msg);
+                    irc.sendPrivMessage(dest,target + ": " + arg);
+                }
+            };
 
-                addQueryPair(new QueryPairPattern(cmdPrefix,word,
-                            replyPattern,cAct,rAct));
-            }
+            addQueryPair(new QueryPairPattern(cmdPrefix,word,
+                        replyPattern,cAct,rAct));
         }
+
+        // PING
+
+        Action pingAction = new Action() {
+            @Override
+            public void doAction(String target,String dest,String msg,long t) {
+                Long timestamp = System.currentTimeMillis();
+                ctcp.query(CTCP.Query.PING,target,timestamp.toString());
+            }
+        };
+
+        Action pingReplyAction = new Action() {
+            @Override
+            public void doAction(String target,String channel,String msg,
+                    long t) {
+                // TODO: move
+                String arg = CTCP.getArgs(CTCP.Query.PING,msg);
+                Long sentTime = Long.valueOf(arg);
+                Long delta = t - sentTime;
+                String nick = IRC.getNick(target);
+                irc.sendPrivMessage(channel,nick + ": " + delta + "ms");
+            }
+        };
+
+        addQueryPair(new QueryPairPattern(cmdPrefix,"ping",
+                    CTCP.Query.PING.replyPattern,
+                    pingAction,pingReplyAction));
+
+        // HOST
+
+        /* The host command just sends a ping to the target, and then
+         * extracts the host from the prefix of the reply. */
+        Action hostReplyAction = new Action() {
+            @Override
+            public void doAction(String target,String channel,String msg,
+                    long t) {
+                irc.sendPrivMessage(channel,
+                        IRC.getNick(target) + ": " + IRC.getHost(target));
+            }
+        };
+
+        addQueryPair(new QueryPairPattern(cmdPrefix,"host",
+                    CTCP.Query.PING.replyPattern,
+                    pingAction,hostReplyAction));
+
     }
 
     // ---------
-
-    class PingAction extends Action {
-        @Override
-        public void doAction(String target,String dest,String msg,long t) {
-            Long timestamp = System.currentTimeMillis();
-            ctcp.query(CTCP.Query.PING,target,timestamp.toString());
-        }
-    }
-
-    class PingReplyAction extends Action {
-        @Override
-        public void doAction(String nick,String channel,String msg,long t) {
-            // TODO: move
-            String arg = CTCP.getArgs(CTCP.Query.PING,msg);
-            Long sentTime = Long.valueOf(arg);
-            Long delta = t - sentTime;
-            irc.sendPrivMessage(channel,nick + ": " + delta + "ms");
-        }
-    }
 
     @Override
     public void privMsg(String prefix,String dest,String msg,long t) {
