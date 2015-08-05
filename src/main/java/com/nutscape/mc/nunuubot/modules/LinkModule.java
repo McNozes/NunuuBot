@@ -4,6 +4,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.ModuleConfig;
 
@@ -22,10 +23,7 @@ public class LinkModule extends Module
                 "\\s*(New snap:)?\\s*(https?://)?(www.)?european\\.shitposting\\.agency/snaps/.*");
 
     @Override
-    public void privMsg(String prefix,String dest,String msg,long t) {
-        if (snapPattern.matcher(msg).matches()) {
-            irc.sendPrivMessage(dest,
-                    msg.replaceAll("european\\.shitposting\\.agency","95.85.2.91"));
-        }
+    public void privMsg(IncomingMessage m) {
+        // TODO
     }
 }

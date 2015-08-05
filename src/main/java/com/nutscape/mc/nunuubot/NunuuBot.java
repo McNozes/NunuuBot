@@ -79,6 +79,7 @@ public class NunuuBot {
     private IRC irc;
     private Connection connection; // TODO: remove from here
     private Map<String,Module> modules;
+    // TODO: use java's Observer and Observable
 
     public NunuuBot(Config config)
     {
@@ -101,94 +102,72 @@ public class NunuuBot {
 
     // ----------
 
-    private void processNotice(String prefix,String dest,String msg,long t) {
+    private void processNotice(IncomingMessage m) {
+        // TODO: catch exceptions
         for (Map.Entry<String,Module> e : modules.entrySet()) {
-            Module m = e.getValue();
-            if (m instanceof NoticeReceiver) {
-                ((NoticeReceiver)m).notice(prefix,dest,msg,t);
+            Module mod = e.getValue();
+            if (mod instanceof NoticeReceiver) {
+                ((NoticeReceiver)mod).notice(m);
             }
         }
     }
 
-    private void processMessage(String prefix,String dest,String msg,long t)
+    private void processPrivMessage(IncomingMessage m)
     {
-        if (msg.equals("\001VERSION\001")) {
-            irc.sendNotice(prefix,"\001VERSION " + config.version
-                    + " " + VERSION_NUMBER + "\001");
-            return;
-        }
+        //if (msg.equals("\001VERSION\001")) {
+        //    irc.sendNotice(prefix,"\001VERSION " + config.version
+        //            + " " + VERSION_NUMBER + "\001");
+        //    return;
+        //}
 
-        if (dest.equals(config.nickname)) {
-            if (config.admins.contains(prefix)) {
+        String message = m.getContent();
+        // TODO: catch exceptions
+        String destination = m.getDestination();
+
+        if (destination.equals(config.nickname)) {
+            if (config.admins.contains(m.getPrefix())) {
                 // Commands - admin only
-                adminCommand(prefix,msg);
+                adminCommand(m);
             } else {
                 // Redirect messages to admins
                 for (String ad : config.admins) {
-                    irc.sendPrivMessage(ad,dest + ": " + msg);
+                    irc.sendPrivMessage(ad,destination + ": "+m.getContent());
                 }
             }
             return;
         }
 
         // Send message to all modules.
-        for (Map.Entry<String,Module> e : modules.entrySet()) {
-            e.getValue().privMsg(prefix,dest,msg,t);
+        // TODO: catch exceptions
+        for (Map.Entry<String,Module> entry : modules.entrySet()) {
+            entry.getValue().privMsg(m);
         }
     }
 
     private void processLine(String line,long timestamp) throws IOException
     {
-        /* Each line is composed of an optional prefix, a command, and
-         * arguments. */
-        String prefix;
-        String command;
-        String arguments;
+        IncomingMessage m = new IncomingMessage(line,timestamp);
 
-        /* If the line starts with a ':', then the first 'word' is a prefix */
-        if (line.charAt(0) == ':') {
-            String[] cmds = line.split(" +",3);
-            prefix = cmds[0].substring(1);
-            command = cmds[1];
-            arguments = cmds[2];
-        } else {
-            String[] cmds = line.split(" +",2);
-            prefix = null;
-            command = cmds[0];
-            arguments = cmds[1];
-        }
-        //System.out.println("> " + command);
-
-        switch (command)
+        switch (m.getCommand())
         {
             case "PING":  // TODO: check if it's my prefix?
-                irc.pong(arguments.substring(1));
+                irc.pong(m.getArguments());
                 break;
-
             case "NOTICE":
-            case "PRIVMSG":
-                String[] parts = arguments.split(" ",2);
-                String destination = parts[0];
-                String message = parts[1].substring(1);
-                if (command.equals("PRIVMSG")) {
-                    processMessage(prefix,destination,message,timestamp);
-                } else {
-                    processNotice(prefix,destination,message,timestamp);
-                }
-
+                processNotice(m);
                 break;
-
+            case "PRIVMSG":
+                processPrivMessage(m);
+                break;
             case "PONG":
                 System.out.println("Received pong...");
                 break;
-
             case "001":
                 irc.nickservIdentify(config.nickPassword);
                 for (String channel : config.initChannels) {
                     irc.join(channel);
                 }
                 break;
-
             default:
                 break;
         }
@@ -214,7 +193,7 @@ public class NunuuBot {
                 while (true) { // try again if interrupted
                     try {
                         line = msgQueue.take();
-                        millis = System.currentTimeMillis(); 
+                        millis = System.currentTimeMillis();
                         break;
                     } catch (InterruptedException e) { }
                 }
@@ -280,8 +259,8 @@ public class NunuuBot {
         return true;
     }
 
-    private void adminCommand(String prefix,String msg) {
-        String[] cmd = msg.split(" +",2);
+    private void adminCommand(IncomingMessage m) {
+        String[] cmd = m.getContent().split(" +",2);
         switch (cmd[0]) {
             case "load":
                 if (!config.useClassReloading)
@@ -289,7 +268,7 @@ public class NunuuBot {
                 try {
                     loadModule(cmd[1]);
                 } catch (ModuleInstantiationException e) {
-                    irc.sendPrivMessage(prefix,
+                    irc.sendPrivMessage(m.getNick(),
                             "error: " + e.getCause().getMessage());
                 }
                 break;
@@ -297,7 +276,7 @@ public class NunuuBot {
                 if (!config.useClassReloading)
                     return;
                 if (!unloadModule(cmd[1])) {
-                    irc.sendPrivMessage(prefix, "error unloading module");
+                    irc.sendPrivMessage(m.getNick(), "error unloading module");
                 }
                 break;
             case "msg":

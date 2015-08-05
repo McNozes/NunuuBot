@@ -3,6 +3,8 @@ package com.nutscape.mc.nunuubot;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+import com.nutscape.mc.nunuubot.IncomingMessage;
+
 /** 
  * Abstract class for bots.
  * TODO: make assynchronous.
@@ -23,7 +25,7 @@ public abstract class Module
         // Do nothing
     }
 
-    public abstract void privMsg(String prefix,String dest,String msg,long t);
+    public abstract void privMsg(IncomingMessage msg);
 
     protected boolean match(Pattern p,String s) {
         return p.matcher(s).matches();

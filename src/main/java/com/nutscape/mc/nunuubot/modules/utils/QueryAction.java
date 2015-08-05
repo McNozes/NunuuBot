@@ -2,7 +2,7 @@ package com.nutscape.mc.nunuubot.modules.utils;
 
 import java.util.Map;
 
-import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IncomingMessage;
 
 public class QueryAction extends Action {
     protected Map<String,String> map;
@@ -13,9 +13,9 @@ public class QueryAction extends Action {
     }
 
     @Override
-    public void doAction(String target,String dest,String msg,long t) {
-        String nickLowerCase = IRC.getNick(target).toLowerCase();
-        map.put(nickLowerCase,dest); // note: lowercase
-        nextAction.doAction(target,dest,msg,t);
+    public void doAction(IncomingMessage m,String... args) {
+        String channel = m.getDestination();
+        map.put(m.getNick(),channel);
+        nextAction.doAction(m,args[0]);
     }
 }

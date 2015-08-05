@@ -2,7 +2,7 @@ package com.nutscape.mc.nunuubot.modules.utils;
 
 import java.util.Map;
 
-import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IncomingMessage;
 
 public class ReplyAction extends Action {
     protected Map<String,String> map;
@@ -13,11 +13,10 @@ public class ReplyAction extends Action {
     }
 
     @Override
-    public void doAction(String target,String dest,String msg,long t) {
-        String nickLowerCase = IRC.getNick(target).toLowerCase();
-        String channel = map.get(nickLowerCase);
-        nextAction.doAction(target,channel,msg,t);
-        map.remove(nickLowerCase);
+    public void doAction(IncomingMessage m,String... args) {
+        String channel = map.get(m.getNick());
+        nextAction.doAction(m,channel);
+        map.remove(m.getNick());
     }
 }
 

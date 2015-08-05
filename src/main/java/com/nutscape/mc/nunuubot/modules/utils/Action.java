@@ -1,5 +1,7 @@
 package com.nutscape.mc.nunuubot.modules.utils;
 
+import com.nutscape.mc.nunuubot.IncomingMessage;
+
 public abstract class Action {
     protected Action nextAction;
 
@@ -10,5 +12,5 @@ public abstract class Action {
     protected Action() { }
 
     // Does this need to be public?
-    public abstract void doAction(String prefix,String dest,String msg,long t);
+    public abstract void doAction(IncomingMessage m,String... args);
 }

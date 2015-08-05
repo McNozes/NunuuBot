@@ -1,5 +1,7 @@
 package com.nutscape.mc.nunuubot.modules.utils;
 
+import com.nutscape.mc.nunuubot.IncomingMessage;
+
 /* Action of the type: .cmd[ target] */
 public class UserAction extends Action {
     protected String cmdPrefix;
@@ -10,16 +12,11 @@ public class UserAction extends Action {
     }
 
     @Override
-    public void doAction(String prefix,String dest,String msg,long t) {
+    public void doAction(IncomingMessage m,String... args) {
         // Figure out who is being queried.
-        String target = null;
-        String[] parts = msg.replaceAll(cmdPrefix,"").split(" +");
-        if (parts.length == 2) {
-            target = parts[1];
-        } else {
-            target = prefix;
-        }
-        nextAction.doAction(target,dest,msg,t);
+        String[] parts = m.getContent().replaceAll(cmdPrefix,"").split(" +");
+        String target = (parts.length == 2) ? parts[1] : m.getNick();
+        nextAction.doAction(m,target);
     }
 }
 

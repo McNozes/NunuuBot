@@ -13,6 +13,7 @@ public class CTCP {
         VERSION,
         USERINFO,
         CLIENTINFO,
+        SOURCE,
         ERRMSG,
         PING,
         TIME;

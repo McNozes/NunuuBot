@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.CTCP;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.ModuleConfig;
@@ -50,18 +51,16 @@ public class UtilsModule extends Module implements NoticeReceiver
 
             Action cAct = new Action() {
                 @Override
-                public void doAction(String target,String dest,
-                        String msg,long t) {
-                    ctcp.query(query,target);
+                public void doAction(IncomingMessage m,String... args) {
+                    ctcp.query(query,args[0]);
                 }
             };
 
             Action rAct = new Action() {
                 @Override
-                public void doAction(String target,String dest,
-                        String msg,long t) {
-                    String arg = CTCP.getArgs(query,msg);
-                    irc.sendPrivMessage(dest,target + ": " + arg);
+                public void doAction(IncomingMessage m,String... args) {
+                    String arg = CTCP.getArgs(query,m.getContent());
+                    irc.sendPrivMessage(args[0],m.getNick() + ": " + arg);
                 }
             };
 
@@ -73,22 +72,20 @@ public class UtilsModule extends Module implements NoticeReceiver
 
         Action pingAction = new Action() {
             @Override
-            public void doAction(String target,String dest,String msg,long t) {
+            public void doAction(IncomingMessage m,String... args) {
                 Long timestamp = System.currentTimeMillis();
-                ctcp.query(CTCP.Query.PING,target,timestamp.toString());
+                ctcp.query(CTCP.Query.PING,args[0],timestamp.toString());
             }
         };
 
         Action pingReplyAction = new Action() {
             @Override
-            public void doAction(String target,String channel,String msg,
-                    long t) {
+            public void doAction(IncomingMessage m,String... args) {
                 // TODO: move
-                String arg = CTCP.getArgs(CTCP.Query.PING,msg);
+                String arg = CTCP.getArgs(CTCP.Query.PING,m.getContent());
                 Long sentTime = Long.valueOf(arg);
-                Long delta = t - sentTime;
-                String nick = IRC.getNick(target);
-                irc.sendPrivMessage(channel,nick + ": " + delta + "ms");
+                Long delta = m.getTimestamp() - sentTime;
+                irc.sendPrivMessage(args[0],m.getNick() + ": " + delta + "ms");
             }
         };
 
@@ -102,10 +99,8 @@ public class UtilsModule extends Module implements NoticeReceiver
          * extracts the host from the prefix of the reply. */
         Action hostReplyAction = new Action() {
             @Override
-            public void doAction(String target,String channel,String msg,
-                    long t) {
-                irc.sendPrivMessage(channel,
-                        IRC.getNick(target) + ": " + IRC.getHost(target));
+            public void doAction(IncomingMessage m,String... args) {
+                irc.sendPrivMessage(args[0],m.getNick() + ": " + m.getHost());
             }
         };
 
@@ -118,17 +113,17 @@ public class UtilsModule extends Module implements NoticeReceiver
     // ---------
 
     @Override
-    public void privMsg(String prefix,String dest,String msg,long t) {
+    public void privMsg(IncomingMessage m) {
         for (CommandPattern command : commands) {
-            if (command.acceptCommand(prefix,dest,msg,t))
+            if (command.acceptCommand(m))
                 return;
         }
     }
 
     @Override
-    public void notice(String prefix,String dest,String msg,long t) {
+    public void notice(IncomingMessage m) {
         for (ReplyPattern reply : replies) {
-            if (reply.acceptReply(prefix,dest,msg,t))
+            if (reply.acceptReply(m))
                 return;
         }
     }
