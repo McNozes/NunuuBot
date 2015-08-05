@@ -15,7 +15,7 @@ public class QueryAction extends Action {
     @Override
     public void doAction(IncomingMessage m,String... args) {
         String channel = m.getDestination();
-        map.put(m.getNick(),channel);
+        map.put(args[0],channel);
         nextAction.doAction(m,args[0]);
     }
 }
