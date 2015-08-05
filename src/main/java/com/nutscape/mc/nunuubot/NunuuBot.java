@@ -81,7 +81,7 @@ public class NunuuBot {
     private Map<String,Module> modules;
     // TODO: use java's Observer and Observable
 
-    public NunuuBot(Config config)
+    public NunuuBot(Config config) throws Exception
     {
         this.connection = new Connection();
         this.irc = new IRC(this.connection);
@@ -96,6 +96,7 @@ public class NunuuBot {
                 loadModule(m);
             } catch (Exception e) { 
                 System.err.println(e);
+                throw e;
             }
         }
     }
@@ -238,11 +239,11 @@ public class NunuuBot {
 
         } catch (InvocationTargetException e) { 
             Throwable cause = e.getCause();
-            System.err.println("Cause: " + cause);
+            System.err.println("InvocationTargetException: " + cause);
             throw new ModuleInstantiationException(e);
         } catch (ClassNotFoundException  | NoSuchMethodException 
                 | InstantiationException | IllegalAccessException e) {
-            System.err.println("error initializing " + shortName + ": " + e);
+            System.err.println("Error initializing " + shortName + ": " + e);
             throw new ModuleInstantiationException(e);
         }
         System.out.println("loaded " + shortName);
@@ -296,7 +297,9 @@ public class NunuuBot {
     }
 
     public static void main(String[] args) throws Exception {
-        new NunuuBot(new Config()).run();
+        try {
+            new NunuuBot(new Config()).run();
+        } catch (ModuleInstantiationException e) { }
     }
 
 }
