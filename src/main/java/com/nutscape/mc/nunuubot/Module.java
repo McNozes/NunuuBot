@@ -11,11 +11,11 @@ import com.nutscape.mc.nunuubot.IncomingMessage;
  */
 public abstract class Module
 {
-    protected ModuleConfig config;
+    protected BotInterface bot;
     protected IRC irc;    // Output interface.
 
-    public Module(IRC irc,ModuleConfig config) {
-        this.config = config;
+    public Module(IRC irc,BotInterface bot) {
+        this.bot = bot;
         this.irc = irc;
     }
 

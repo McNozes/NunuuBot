@@ -1,7 +1,10 @@
 package com.nutscape.mc.nunuubot;
 
-public interface ModuleConfig {
+import java.util.logging.Level;
+
+public interface BotInterface {
     String getNickname();
     String getSpecialChar();
     String getCmdPrefix();
+    void log(Level level,String msg);
 }

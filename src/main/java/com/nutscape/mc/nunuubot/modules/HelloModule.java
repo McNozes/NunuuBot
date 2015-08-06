@@ -6,19 +6,21 @@ import java.util.regex.Matcher;
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
-import com.nutscape.mc.nunuubot.ModuleConfig;
+import com.nutscape.mc.nunuubot.BotInterface;
 
 public class HelloModule extends Module
 {
-    public HelloModule(IRC irc,ModuleConfig config) {
-        super(irc,config);
+    public HelloModule(IRC irc,BotInterface bot) {
+        super(irc,bot);
     }
 
     private final Pattern helloPattern =
-        Pattern.compile("[hH]ello[.]?");
+        Pattern.compile(" *hello[ ,]* +" + bot.getNickname() +
+                "[!.]*",Pattern.CASE_INSENSITIVE);
 
     private final Pattern olaPattern =
-        Pattern.compile("[oO][lL][aáAÁ][ ,]* +" + config.getNickname());
+        Pattern.compile(" *[oO][lL][aáAÁ][ ,]* +" + bot.getNickname() +
+                "[!.]*",Pattern.CASE_INSENSITIVE);
 
     @Override
     public void privMsg(IncomingMessage m) {

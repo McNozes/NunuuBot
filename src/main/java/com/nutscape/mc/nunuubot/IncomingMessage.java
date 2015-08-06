@@ -63,8 +63,6 @@ public class IncomingMessage {
         return s.substring(1);
     }
 
-    // TODO: do 'destination and content' part
-
     public String getPrefix()      { return prefix; }
     public String getNick()        { return nick; }
     public String getUser()        { return user; }

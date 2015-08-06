@@ -6,12 +6,12 @@ import java.util.regex.Matcher;
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
-import com.nutscape.mc.nunuubot.ModuleConfig;
+import com.nutscape.mc.nunuubot.BotInterface;
 
 public class LinkModule extends Module
 {
-    public LinkModule(IRC irc,ModuleConfig config) {
-        super(irc,config);
+    public LinkModule(IRC irc,BotInterface bot) {
+        super(irc,bot);
     }
 
     private static final Pattern youtubePattern = Pattern.compile(

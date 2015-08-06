@@ -11,7 +11,7 @@ import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.CTCP;
 import com.nutscape.mc.nunuubot.Module;
-import com.nutscape.mc.nunuubot.ModuleConfig;
+import com.nutscape.mc.nunuubot.BotInterface;
 import com.nutscape.mc.nunuubot.NoticeReceiver;
 import com.nutscape.mc.nunuubot.modules.utils.Action;
 import com.nutscape.mc.nunuubot.modules.utils.CommandPattern;
@@ -30,13 +30,13 @@ public class UtilsModule extends Module implements NoticeReceiver
         replies.add(pair);
     }
 
-    public UtilsModule(IRC irc,ModuleConfig config) {
-        super(irc,config);
+    public UtilsModule(IRC irc,BotInterface bot) {
+        super(irc,bot);
         this.ctcp = new CTCP(irc);
 
         this.commands = new ArrayList<CommandPattern>();
         this.replies = new ArrayList<ReplyPattern>();
-        String cmdPrefix = config.getCmdPrefix();
+        String cmdPrefix = bot.getCmdPrefix();
 
         // Add CTCP queries
 
@@ -90,8 +90,7 @@ public class UtilsModule extends Module implements NoticeReceiver
         };
 
         addQueryPair(new QueryPairPattern(cmdPrefix,"ping",
-                    CTCP.Query.PING.replyPattern,
-                    pingAction,pingReplyAction));
+                    CTCP.Query.PING.replyPattern,pingAction,pingReplyAction));
 
         // HOST
 
@@ -105,9 +104,7 @@ public class UtilsModule extends Module implements NoticeReceiver
         };
 
         addQueryPair(new QueryPairPattern(cmdPrefix,"host",
-                    CTCP.Query.PING.replyPattern,
-                    pingAction,hostReplyAction));
-
+                    CTCP.Query.PING.replyPattern,pingAction,hostReplyAction));
     }
 
     // ---------

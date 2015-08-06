@@ -5,6 +5,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.net.Socket;
 import java.net.InetSocketAddress;
+import java.util.logging.Level;
 
 /**
  * Manages the connection to the IRC server.
@@ -14,8 +15,11 @@ import java.net.InetSocketAddress;
  */
 class Connection {
     private Writer out;
+    private BotInterface bot;
 
-    public Connection() { }
+    Connection(BotInterface bot) {
+        this.bot = bot;
+    }
 
     // ------------
 
@@ -30,14 +34,13 @@ class Connection {
         s.connect(new InetSocketAddress(serverAddress,serverPort));
         this.out = new OutputStreamWriter(s.getOutputStream());
 
-        Runnable fetcher = 
-            new MessageFetcher(s.getInputStream(),System.out,msgQueue);
+        Runnable fetcher = new MessageFetcher(s.getInputStream(),msgQueue,bot);
         new Thread(fetcher).start();
     }
 
     public void send(String cmd) throws IOException
     {
-        System.out.println("---> " +  cmd);
+        bot.log(Level.INFO,"---> " +  cmd);
         out.write(cmd);
         out.write('\n');
         out.flush();
@@ -48,17 +51,16 @@ class Connection {
      * Optionally prints messages to a stream as they are read. */
     static class MessageFetcher implements Runnable {
         private BufferedReader in;
-        private PrintStream log;
         private BlockingQueue<String> queue;
+        private BotInterface bot;
 
-        MessageFetcher(
-                InputStream in,
-                OutputStream out,
-                BlockingQueue<String> queue) throws IOException
+        MessageFetcher(InputStream in,BlockingQueue<String> queue,
+                BotInterface bot)
+            throws IOException
         {
             this.in = new BufferedReader(new InputStreamReader(in));
-            this.log = (out != null) ? new PrintStream(out) : null;
             this.queue = queue;
+            this.bot = bot;
         }
 
         public void run() {
@@ -70,12 +72,10 @@ class Connection {
                     } catch (InterruptedException e) {
                         System.err.println("Interrupted: " + e);
                     }
-                    if (log != null) {
-                        log.println(line);
-                    }
+                    bot.log(Level.FINE,line);
                 }
             } catch (IOException e) {
-                System.out.println(e);
+                bot.log(Level.SEVERE,e.toString());
             }
         }
     }
