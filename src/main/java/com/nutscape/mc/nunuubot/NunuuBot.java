@@ -75,27 +75,22 @@ public class NunuuBot implements BotInterface {
         }
     }
 
-    // TODO: make final
-    private Config config;
-    private IRC irc;
-    private Connection connection; // TODO: remove from here
-    private Map<String,Module> modules;
-    private BlockingQueue<LogRecord> logQueue;
+    // TODO: remove Connection from here
     // TODO: use java's Observer and Observable
+    private Config config;
+    private final Connection connection = new Connection(this);
+    private final IRC irc;
+    private final Map<String,Module> modules = new HashMap();
+    private final BlockingQueue<LogRecord> logQueue
+        = new LinkedBlockingQueue<>();
 
-    /* 
-     * This constructor halts if a single module fails to initialize.
-     */
+    /* Constructor halts if a single module fails to initialize.  */
     private NunuuBot(Config config) throws Exception
     {
         this.config = config;
-
-        this.logQueue = new LinkedBlockingQueue<>();
-        this.connection = new Connection(this);
         this.irc = new IRC(connection);
 
         // Start modules specified in the config
-        this.modules = new HashMap();
         for (String m : config.initModules) {
             loadModule(m);
         }
@@ -331,5 +326,3 @@ public class NunuuBot implements BotInterface {
         new NunuuBot(new Config()).run();
     }
 }
-
-
