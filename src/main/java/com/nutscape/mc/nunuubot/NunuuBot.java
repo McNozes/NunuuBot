@@ -10,11 +10,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Arrays;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.logging.LogRecord;
 import java.util.logging.Level;
+
 
 class ModuleInstantiationException extends Exception { 
     ModuleInstantiationException(Exception e) { super(e); }
@@ -24,7 +24,7 @@ public class NunuuBot implements BotInterface {
 
     // SETTINGS
 
-    private static final String VERSION_NUMBER = "0.1";
+    private static final String VERSION_NUMBER = "0.2";
 
     // Must not end in '/':
     private static final String MODULES_DIR = "modules";
@@ -36,44 +36,6 @@ public class NunuuBot implements BotInterface {
         NunuuBot.class.getCanonicalName().replaceAll("[.][^.]+$","") +
         "." + MODULES_DIR.replaceAll("/",".");
 
-    // TODO: move into config file
-    private static class Config {
-        private String nickname = "NunuuBot";
-        private String realname = "github.com/McNozes/NunuuBot";
-        private String mode = "0";
-        private String nickPassword = "";
-        private String version = "github.com/McNozes/NunuuBot";
-        private String serverAddress = "irc.rizon.net";
-        private int serverPort = 6667;
-        private int hostPort = 50003;
-        private boolean useClassReloading = true;
-        private char specialChar = '\\';
-        private String logStdLevel = "FINE";
-        private String logFileLevel = "ALL";
-        private String logFileDir = ".";
-        private int newLogFileAtSizeKB = 5*1024;
-
-        private List<String> initModules = Arrays.asList(new String[] {
-            "HelloModule",
-            "LinkModule",
-            "UtilsModule"
-        });
-
-        private List<String> initChannels = Arrays.asList(new String[] {
-            "#McNozes"//,"#bots"
-        });
-
-        private List<String> admins = Arrays.asList(new String[] {
-            "McNozes!~McNozes@chico.diogo"
-        });
-
-        private String cmdPrefix;
-
-        Config() {
-            this.cmdPrefix =  "^(" + nickname + "[-:, ]+|" +
-                specialChar + " *)";
-        }
-    }
 
     // TODO: remove Connection from here
     // TODO: use java's Observer and Observable
@@ -324,6 +286,9 @@ public class NunuuBot implements BotInterface {
     }
 
     public static void main(String[] args) throws Exception {
-        new NunuuBot(new Config()).run();
+        Config config = new Config();
+        config.writeCopyToFile("teste.txt");
+
+        new NunuuBot(config).run();
     }
 }
