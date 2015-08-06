@@ -50,7 +50,7 @@ public class NunuuBot implements BotInterface {
         private char specialChar = '\\';
         private String logStdLevel = "FINE";
         private String logFileLevel = "ALL";
-        private String logFileName = "log";
+        private String logFileDir = ".";
         private int newLogFileAtSizeKB = 5*1024;
 
         private List<String> initModules = Arrays.asList(new String[] {
@@ -289,9 +289,10 @@ public class NunuuBot implements BotInterface {
 
         try {
             new Thread(new LoggerRunnable(
+                        this.getClass().getSimpleName(),
                         logQueue,
                         Level.parse(config.logStdLevel),
-                        config.logFileName,
+                        config.logFileDir,
                         Level.parse(config.logFileLevel),
                         config.newLogFileAtSizeKB)).start();
 
