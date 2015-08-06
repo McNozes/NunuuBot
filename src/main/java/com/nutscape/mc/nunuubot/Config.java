@@ -56,32 +56,56 @@ class Config {
             specialChar + " *)";
     }
 
-    void writeCopyToFile(String file) throws IOException
+    static private ExclusionStrategy exclusion = new ExclusionStrategy()
     {
-        Gson gson = new GsonBuilder()
-            .setPrettyPrinting()
-            .serializeNulls()
-            .addSerializationExclusionStrategy(
-                    new ExclusionStrategy() {
-                        @Override
-                        public boolean shouldSkipField(FieldAttributes f) {
-                            return f.getName().equals("cmdPrefix");
-                        }
-                        @Override
-                        public boolean shouldSkipClass(Class<?> clazz) {
-                            return false;
-                        }
-                    })
-        .create();
+        @Override
+        public boolean shouldSkipField(FieldAttributes f) {
+            List<String> names = Arrays.asList(new String[] {
+                "exclusion",
+                "cmdPrefix"
+            });
+            return names.contains(f.getName());
+        }
 
-        OutputStream out = Files.newOutputStream(Paths.get(file));
-        CharSequence result = gson.toJson(this);
-        System.out.println(result);
-        for (int i=0; i < result.length(); i++) {
-            out.write(result.charAt(i));
+        @Override
+        public boolean shouldSkipClass(Class<?> clazz) {
+            return false;
+        }
+    };
+
+    void write(String file) throws IOException
+    {
+        String s = toString();
+
+        Writer out = Files.newBufferedWriter(Paths.get(file));
+        for (int i=0; i < s.length(); i++) {
+            out.write(s.codePointAt(i));
         }
         if (out != null)
             out.close();
+    }
+
+    static Config read(String file) throws IOException
+    {
+        Gson gson = new GsonBuilder()
+            .serializeNulls()
+            .addDeserializationExclusionStrategy(exclusion)
+        .create();
+
+        Reader in = Files.newBufferedReader(Paths.get(file));
+        Config config = gson.fromJson(in,Config.class);
+        if (in != null)
+            in.close();
+        return config;
+    }
+
+    public String toString() {
+        Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .serializeNulls()
+            .addSerializationExclusionStrategy(exclusion)
+        .create();
+        return gson.toJson(this);
     }
 }
 

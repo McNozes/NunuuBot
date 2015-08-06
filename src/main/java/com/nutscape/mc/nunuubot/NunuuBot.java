@@ -15,7 +15,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.logging.LogRecord;
 import java.util.logging.Level;
 
-
 class ModuleInstantiationException extends Exception { 
     ModuleInstantiationException(Exception e) { super(e); }
 }
@@ -116,7 +115,9 @@ public class NunuuBot implements BotInterface {
                 System.out.println("Received pong...");
                 break;
             case "001":
-                irc.nickservIdentify(config.nickPassword); // TODO conditional
+                if (!config.nickPassword.equals("")) {
+                    irc.nickservIdentify(config.nickPassword);
+                }
                 for (String channel : config.initChannels) {
                     irc.join(channel);
                 }
@@ -286,9 +287,8 @@ public class NunuuBot implements BotInterface {
     }
 
     public static void main(String[] args) throws Exception {
-        Config config = new Config();
-        config.writeCopyToFile("teste.txt");
-
-        new NunuuBot(config).run();
+        Config newConfig = Config.read("example_config.json");
+        System.out.println(newConfig);
+        new NunuuBot(newConfig).run();
     }
 }
