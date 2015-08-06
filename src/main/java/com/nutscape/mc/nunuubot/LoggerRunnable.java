@@ -1,6 +1,7 @@
 package com.nutscape.mc.nunuubot;
 
 import java.io.*;
+import java.util.regex.Pattern;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 import java.util.logging.Handler;
@@ -10,6 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Formatter;
 import java.util.logging.SimpleFormatter;
+import java.util.logging.Filter;
 
 //import static java.nio.file.StandardOpenOption.*;
 //import static java.nio.file.StandardCopyOption.*;
@@ -47,12 +49,25 @@ class LoggerRunnable implements Runnable {
         LOGGER.setUseParentHandlers(false);
 
         Handler stdlog = new StreamHandler(System.out,new StdOutFormatter()) {
+            // publish() doesn't flush by default. We need to override that
+            // so that we can debug in realtime.
             @Override
             public synchronized void publish(final LogRecord record) {
                 super.publish(record);
                 flush();
             }
         };
+        // Don't clutter stdout with PONG messages.
+        stdlog.setFilter(new Filter() {
+            // The ':' is so that CTCP messages don't match.
+            private Pattern pongRegex =
+                Pattern.compile(".*[^:]PONG .+");
+
+            @Override
+            public boolean isLoggable(LogRecord record) {
+                return !pongRegex.matcher(record.getMessage()).matches();
+            }
+        });
         LOGGER.addHandler(stdlog);
 
         int noFiles = 2;
