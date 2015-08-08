@@ -31,9 +31,13 @@ import java.util.logging.Filter;
  * - FINER
  * - FINEST
  *
- * This class runs in its own thread, and writes log information into
+ * This class runs in its own thread and writes log information to
  * standard output as well as to a file. When said file is big enough, a
  * new one is created. Old log files are deleted.
+ *
+ * TODO:
+ * - add session header
+ * - change the --->
  */
 class LoggerRunnable implements Runnable {
     private BlockingQueue<LogRecord> msgQueue;

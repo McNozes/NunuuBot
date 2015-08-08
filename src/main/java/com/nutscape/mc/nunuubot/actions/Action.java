@@ -1,9 +1,22 @@
-package com.nutscape.mc.nunuubot.modules.utils;
+package com.nutscape.mc.nunuubot.actions;
 
 import com.nutscape.mc.nunuubot.IncomingMessage;
 
+public abstract class Action {
+    protected Action nextAction;
+
+    protected Action(Action nextAction) {
+        this.nextAction = nextAction;
+    }
+
+    protected Action() { }
+
+    // Does this need to be public?
+    public abstract void doAction(IncomingMessage m,String... args);
+}
+
 /* Action of the type: .cmd[ target] */
-public class UserAction extends Action {
+class UserAction extends Action {
     protected String cmdPrefix;
 
     public UserAction(String cmdPrefix,Action action) {
@@ -19,4 +32,3 @@ public class UserAction extends Action {
         nextAction.doAction(m,target);
     }
 }
-

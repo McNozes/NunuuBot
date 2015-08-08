@@ -1,0 +1,28 @@
+{
+  "nickname": "NunuuBot",
+  "realname": "github.com/McNozes/NunuuBot",
+  "mode": "0",
+  "nickPassword": "",
+  "version": "github.com/McNozes/NunuuBot",
+  "serverAddress": "irc.rizon.net",
+  "serverPort": 6667,
+  "hostPort": 50003,
+  "useClassReloading": true,
+  "specialChar": "\\",
+  "logStdLevel": "FINE",
+  "logFileLevel": "ALL",
+  "logFileDir": ".",
+  "newLogFileAtSizeKB": 5120,
+  "initModules": [
+    "HelloModule",
+    "LinkModule",
+    "UtilsModule"
+  ],
+  "initChannels": [
+    "#McNozes",
+    "#bots"
+  ],
+  "admins": [
+    "McNozes!~McNozes@chico.diogo"
+  ]
+}

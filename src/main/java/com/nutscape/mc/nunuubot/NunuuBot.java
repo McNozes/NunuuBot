@@ -287,8 +287,7 @@ public class NunuuBot implements BotInterface {
     }
 
     public static void main(String[] args) throws Exception {
-        Config newConfig = Config.read("example_config.json");
-        System.out.println(newConfig);
+        Config newConfig = Config.read("config.json");
         new NunuuBot(newConfig).run();
     }
 }
