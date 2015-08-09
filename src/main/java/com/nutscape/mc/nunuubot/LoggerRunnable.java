@@ -35,9 +35,6 @@ import java.util.logging.Filter;
  * standard output as well as to a file. When said file is big enough, a
  * new one is created. Old log files are deleted.
  *
- * TODO:
- * - add session header
- * - change the --->
  */
 class LoggerRunnable implements Runnable {
     private BlockingQueue<LogRecord> msgQueue;
@@ -49,15 +46,17 @@ class LoggerRunnable implements Runnable {
     LoggerRunnable(
             String botName,
             BlockingQueue<LogRecord> msgQueue,
-            Level globalLevel,
+            Level stdLogLevel,
             String fileLogDir,
             Level fileLogLevel,
             int newLogFileAtSizeKB) throws IOException
     {
         this.msgQueue = msgQueue;
 
-        LOGGER.setLevel(globalLevel);
         LOGGER.setUseParentHandlers(false);
+        LOGGER.setLevel(Level.ALL);
+
+        // STDOUT LOG
 
         Handler stdlog = new StreamHandler(System.out,new StdOutFormatter()) {
             // publish() doesn't flush by default. We need to override that
@@ -79,7 +78,10 @@ class LoggerRunnable implements Runnable {
                 return !pongRegex.matcher(record.getMessage()).matches();
             }
         });
+        stdlog.setLevel(stdLogLevel);
         LOGGER.addHandler(stdlog);
+
+        // FILE LOG
 
         String fileNamePattern = fileLogDir + "/log-" + botName + "%g.txt";
         FileHandler fileLogHandler = new FileHandler(

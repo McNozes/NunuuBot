@@ -98,6 +98,7 @@ class Config {
         return config;
     }
 
+    @Override
     public String toString() {
         Gson gson = new GsonBuilder()
             .setPrettyPrinting()

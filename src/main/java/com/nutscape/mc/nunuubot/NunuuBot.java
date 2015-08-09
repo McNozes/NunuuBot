@@ -22,6 +22,7 @@ class ModuleInstantiationException extends Exception {
 public class NunuuBot implements BotInterface {
 
     // SETTINGS
+    // TODO: log file names here.
 
     private static final String CONFIG_FILE = "config.json";
 
@@ -50,7 +51,11 @@ public class NunuuBot implements BotInterface {
     /* Constructor halts if a single module fails to initialize.  */
     private NunuuBot(Config config) throws Exception
     {
+        log(Level.FINE,"************** STARTING **************");
+
         this.config = config;
+        log(Level.FINER,config.toString());
+
         this.irc = new IRC(connection);
 
         // Start modules specified in the config
@@ -260,6 +265,7 @@ public class NunuuBot implements BotInterface {
         BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>();
 
         try {
+            // Start logging in its own thread
             new Thread(new LoggerRunnable(
                         this.getClass().getSimpleName(),
                         logQueue,
@@ -268,6 +274,7 @@ public class NunuuBot implements BotInterface {
                         Level.parse(config.logFileLevel),
                         config.newLogFileAtSizeKB)).start();
 
+            // Connect to the server
             this.connection.init(
                     config.serverAddress,
                     config.serverPort,
@@ -294,11 +301,34 @@ public class NunuuBot implements BotInterface {
         }
     }
 
-    public static void main(String[] args) {
+    private void finishAllModules() {
+        for (Map.Entry<String,Module> e : modules.entrySet()) {
+            e.getValue().finish();
+        }
+    }
+
+    private class Finisher implements Runnable {
+        @Override public void run() {
+            finishAllModules();
+        }
+    }
+
+    public static void main(String[] args)
+    {
         try {
 
+            // Read config file
             Config newConfig = Config.read(CONFIG_FILE);
-            new NunuuBot(newConfig).run();
+
+            // Program instance
+            NunuuBot nunuubot = new NunuuBot(newConfig);
+
+            // Control+C hook
+            Runtime.getRuntime().addShutdownHook(
+                    new Thread(nunuubot.new Finisher()));
+
+            // Run the program (connect to server, start threads, etc)
+            nunuubot.run();
 
         } catch (IOException e) {
             System.err.println("IO error: " + e.getMessage());

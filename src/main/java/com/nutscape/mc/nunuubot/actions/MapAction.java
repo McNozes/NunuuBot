@@ -34,7 +34,8 @@ class MapPutAction extends Action {
     private Map<String,String> map;
     private IRC irc;
 
-    public MapPutAction(IRC irc,Map<String,String> map) {
+    public MapPutAction(IRC irc,Map<String,String> map,Action action) {
+        super(action);
         this.map = map;
         this.irc = irc;
     }
@@ -44,6 +45,7 @@ class MapPutAction extends Action {
         String target = args[0];
         map.put(m.getNick(),target);
         irc.sendPrivMessage(m.getNick(),"User " + target + " set");
+        nextAction.doAction(m,target);
     }
 }
 

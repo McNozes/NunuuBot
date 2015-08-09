@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IncomingMessage;
 
 public class CommandFactory {
     private String cmdPrefix = "";
@@ -15,12 +16,6 @@ public class CommandFactory {
 
     public void setIRC(IRC irc) {
         this.irc = irc;
-    }
-
-    public Command doNothing() {
-        return new Action() {
-            @Override public void doAction(IncomingMessage m,String...args) { }
-        };
     }
 
     public ActionPattern newArgCommand(String word,Action action) {
@@ -43,7 +38,13 @@ public class CommandFactory {
         return newUserCommand(word,new MapGetAction(irc,map,action));
     }
 
+    public ActionPattern newMapPutCommand(String word,
+            Map<String,String> map,Action action) {
+        return newArgCommand(word,new MapPutAction(irc,map,action));
+    }
+
     public ActionPattern newMapPutCommand(String word,Map<String,String> map) {
-        return newArgCommand(word,new MapPutAction(irc,map));
+        return newArgCommand(word,
+                new MapPutAction(irc,map,new DoNothingAction()));
     }
 }

@@ -18,6 +18,10 @@ public abstract class Action {
     public abstract void doAction(IncomingMessage m,String... args);
 }
 
+class DoNothingAction extends Action {
+    @Override public void doAction(IncomingMessage m,String...args) { }
+}
+
 /* Action of the type: .cmd[ target] */
 class UserAction extends Action {
     protected String cmdPrefix;
