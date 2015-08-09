@@ -310,6 +310,7 @@ public class NunuuBot implements BotInterface {
     private class Finisher implements Runnable {
         @Override public void run() {
             finishAllModules();
+            irc.finish();
         }
     }
 
@@ -335,5 +336,6 @@ public class NunuuBot implements BotInterface {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 }

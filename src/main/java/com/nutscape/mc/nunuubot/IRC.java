@@ -26,6 +26,10 @@ public class IRC
         }
     }
 
+    public void finish() {
+        connection.finish();
+    }
+
     // ---------------------
 
     public void sendUser(String nick,String mode,String realname) {

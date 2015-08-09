@@ -16,6 +16,7 @@ import java.util.logging.Level;
 class Connection {
     private Writer out;
     private BotInterface bot;
+    MessageFetcher fetcher;
 
     Connection(BotInterface bot) {
         this.bot = bot;
@@ -34,7 +35,7 @@ class Connection {
         s.connect(new InetSocketAddress(serverAddress,serverPort));
         this.out = new OutputStreamWriter(s.getOutputStream());
 
-        Runnable fetcher = new MessageFetcher(s.getInputStream(),msgQueue,bot);
+        this.fetcher = new MessageFetcher(s.getInputStream(),msgQueue,bot);
         new Thread(fetcher).start();
     }
 
@@ -53,6 +54,7 @@ class Connection {
         private BufferedReader in;
         private BlockingQueue<String> queue;
         private BotInterface bot;
+        private boolean stop = false;
 
         MessageFetcher(InputStream in,BlockingQueue<String> queue,
                 BotInterface bot)
@@ -66,6 +68,9 @@ class Connection {
         public void run() {
             try {
                 while (true) {
+                    if (stop && queue.isEmpty()) {
+                        break;
+                    }
                     String line = in.readLine();
                     if (line == null) { // TODO: figure out reason for nulls
                         bot.log(Level.WARNING,"Null line in MessageFetcher");
@@ -82,5 +87,13 @@ class Connection {
                 bot.logThrowable(e);
             }
         }
+
+        public void finish() {
+            this.stop = true;
+        }
+    }
+
+    public void finish() {
+        fetcher.finish();
     }
 }

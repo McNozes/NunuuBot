@@ -51,7 +51,6 @@ class ArgAction extends Action {
 
     @Override
     public void doAction(IncomingMessage m,String... args) {
-        System.out.println("aqui - arg");
         // Figure out who is being queried.
         String[] parts = m.getContent().replaceAll(cmdPrefix,"").split(" +");
         if (parts.length != 2) {

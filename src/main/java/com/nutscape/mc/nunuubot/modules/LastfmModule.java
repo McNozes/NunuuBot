@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,6 +26,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonArray;
 
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
@@ -111,25 +113,78 @@ public class LastfmModule extends Module
                 URL url = formBaseRequestURL("user.getRecentTracks",
                         "&user="+target + "&limit=1");
 
-                JsonObject response = makeJsonRequest(url);
-                if (response.has("error")) {
-                    handleResponseError(response,m);
+                JsonObject resp = makeJsonRequest(url);
+                // Check for errors
+                if (resp.has("error")) {
+                    handleResponseError(resp,m);
                     return;
                 }
+                StringBuilder msg = new StringBuilder();
+                JsonElement el = getObject(resp,"recenttracks").get("track");
+                if (!el.isJsonArray()) {
+                    JsonObject track = el.getAsJsonObject();
+                    msg.append(nick);
+                    msg.append(": ");
+                    msg.append(getTrackString(track));
+                    msg.append(" ");
+                    msg.append(getTimeString(track));
+                } else {
+                    // LastFM returns an array with two tracks when the track
+                    // is currently playing.
+                    JsonArray array = el.getAsJsonArray();
+                    // It's the second element
+                    JsonObject track = array.get(1).getAsJsonObject();
+                    msg.append(target);
+                    msg.append(" is now playing ");
+                    msg.append(getTrackString(track));
+                }
 
-                JsonObject track = getObject(
-                        getObject(response,"recenttracks"),"track");
-                bot.log(Level.INFO,track.toString());
+                //bot.log(Level.INFO,track.toString());
+                irc.sendPrivMessage(m.getDestination(),msg.toString());
 
-                String artist = getString(getObject(track,"artist"),"#text");
-                String name = getString(track,"name");
-
-                irc.sendPrivMessage(m.getDestination(),
-                        target + " last played " + name + " by " + artist);
             } catch (IOException e) {
                 bot.logThrowable(e);
             }
+        }
 
+        private String getTrackString(JsonObject track)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append("\"");
+            builder.append(getString(track,"name"));
+            builder.append("\" by \"");
+            builder.append(getString(getObject(track,"artist"),"#text"));
+            builder.append("\" (\"");
+            builder.append(getString(getObject(track,"album"),"#text"));
+            builder.append("\")");
+            return builder.toString();
+        }
+
+        private String getTimeString(JsonObject track) {
+            // uts - seconds since Jan 01 1970 UTC
+            long uts = 
+                Long.valueOf(getString(getObject(track,"date"),"uts"));
+            long now = System.currentTimeMillis() / 1000L;
+            long seconds = (now - uts);
+            int days = (int) TimeUnit.SECONDS.toDays(seconds);
+            if (days > 1) {
+                return days + " days ago";
+            } else if (days == 1) {
+                return "yesterday";
+            }
+            long hTotal = TimeUnit.SECONDS.toHours(seconds);
+            long mTotal = TimeUnit.SECONDS.toMinutes(seconds);
+            long sTotal = TimeUnit.SECONDS.toSeconds(seconds);
+            long h = hTotal - (days*24);
+            long m = mTotal - (hTotal*60);
+            long s = sTotal - (mTotal*60);
+            if (h == 0) {
+                if (m == 0) {
+                    return s + "s ago";
+                }
+                return m + "m " + s + "s ago";
+            }
+            return h + "h " + m + "m " + s + "s ago";
         }
     };
 
@@ -190,15 +245,10 @@ public class LastfmModule extends Module
         }
     };
 
-
-    class UserInfo {
-        private String name;
-        private String realname;
-    }
-
     private void loadMap() {
         Path mapFile = Paths.get(MAP_FILE);
         if (Files.notExists(mapFile)) {
+            bot.log(Level.WARNING,"No map file was loaded");
             return;
         }
         bot.log(Level.INFO,"LastfmModule: Loading user file " + MAP_FILE);
@@ -216,7 +266,6 @@ public class LastfmModule extends Module
         }
     }
 
-    // TODO: save after 5 new users
     private void saveMap() {
         bot.log(Level.INFO,"LastfmModule: Saving user file " + MAP_FILE);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
