@@ -50,6 +50,7 @@ import com.nutscape.mc.nunuubot.actions.CommandContainer;
  */
 public class LastfmModule extends Module
 {
+    // TODO: move to config file
     private final String API_KEY = "9088f3a19564351cc470a8f1d3f25745";
     private final String API_SECRET = "5452417c96dd8e6f56d9745c5774ac09";
     private final String API_URL = "http://ws.audioscrobbler.com/2.0/";

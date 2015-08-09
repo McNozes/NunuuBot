@@ -294,9 +294,13 @@ public class NunuuBot implements BotInterface {
                         break;
                     } catch (InterruptedException e) { }
                 }
-                processLine(line,millis);
+                try {
+                    processLine(line,millis);
+                } catch (Exception e) {
+                    logThrowable(e);
+                }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logThrowable(e);
         }
     }
