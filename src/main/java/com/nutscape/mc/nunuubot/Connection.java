@@ -67,14 +67,11 @@ class Connection {
 
         public void run() {
             try {
-                while (true) {
-                    if (stop && queue.isEmpty()) {
-                        break;
-                    }
+                while (!stop || !queue.isEmpty()) {
                     String line = in.readLine();
                     if (line == null) { // TODO: figure out reason for nulls
-                        bot.log(Level.WARNING,"Null line in MessageFetcher");
-                        continue;
+                        bot.log(Level.SEVERE,"Null line in MessageFetcher");
+                        break;
                     }
                     try {
                         queue.put(line);

@@ -19,6 +19,8 @@ class ModuleInstantiationException extends Exception {
     ModuleInstantiationException(Exception e) { super(e); }
 }
 
+class StopExecutingException extends Exception { }
+
 public class NunuuBot implements BotInterface {
 
     // SETTINGS
@@ -77,6 +79,7 @@ public class NunuuBot implements BotInterface {
     }
 
     private void processPrivMessage(IncomingMessage m)
+        throws StopExecutingException
     {
         //if (msg.equals("\001VERSION\001")) {
         //    irc.sendNotice(prefix,"\001VERSION " + config.version
@@ -104,9 +107,11 @@ public class NunuuBot implements BotInterface {
         }
     }
 
-    private void processLine(String line,long timestamp) throws IOException
+    private void processLine(String line,long timestamp) 
+        throws IOException, StopExecutingException
     {
         IncomingMessage m = new IncomingMessage(line,timestamp);
+
         switch (m.getCommand())
         {
             case "PING":  // TODO: check if it's my prefix?
@@ -157,7 +162,7 @@ public class NunuuBot implements BotInterface {
                 ModuleClassLoader loader = new ModuleClassLoader(parent);
                 cl = loader.loadClass(fullName);
             } else {
-                System.out.println("loading statically");
+                log(Level.FINE,"Modules: loading statically");
                 cl = Class.forName(fullName);
             }
             Constructor<?> constr = cl.getConstructor(
@@ -174,7 +179,7 @@ public class NunuuBot implements BotInterface {
             System.err.println("Error initializing " + shortName + ": " + e);
             throw new ModuleInstantiationException(e);
         }
-        System.out.println("loaded " + shortName);
+        log(Level.INFO,"Modules: loaded " + shortName);
     }
 
     private boolean unloadModule(String moduleName) {
@@ -184,11 +189,13 @@ public class NunuuBot implements BotInterface {
             return false;
         }
         mod.finish();
-        System.out.println("Unloaded " + moduleName);
+        log(Level.INFO,"Unloaded " + moduleName);
         return true;
     }
 
-    private void adminCommand(IncomingMessage m) {
+    private void adminCommand(IncomingMessage m)
+        throws StopExecutingException
+    {
         String[] cmd = m.getContent().split(" +",2);
         switch (cmd[0]) {
             case "load": case "l":
@@ -222,8 +229,7 @@ public class NunuuBot implements BotInterface {
                 irc.sendPrivMessage(cmd[1],"\001VERSION\001");
                 break;
             case "quit":
-                // TODO
-                break;
+                throw new StopExecutingException();
             default:
                 break;
         }
@@ -284,30 +290,32 @@ public class NunuuBot implements BotInterface {
             irc.sendUser(config.nickname,config.mode,config.realname);
             irc.sendNick(config.nickname);
 
-            while (true) {
+            boolean stop = false;
+
+            while (!stop || !msgQueue.isEmpty()) {
                 String line;
                 long millis;
                 while (true) { // try again if interrupted
                     try {
                         line = msgQueue.take();
                         millis = System.currentTimeMillis();
-                        break;
+                        break; // success; break the infinite cycle
                     } catch (InterruptedException e) { }
                 }
                 try {
                     processLine(line,millis);
+                } catch (StopExecutingException e) {
+                    stop = true;
                 } catch (Exception e) {
                     logThrowable(e);
                 }
             }
+
+            // Finish program
+            new Finisher().run();
+
         } catch (IOException e) {
             logThrowable(e);
-        }
-    }
-
-    private void finishAllModules() {
-        for (Map.Entry<String,Module> e : modules.entrySet()) {
-            e.getValue().finish();
         }
     }
 
@@ -315,6 +323,12 @@ public class NunuuBot implements BotInterface {
         @Override public void run() {
             finishAllModules();
             irc.finish();
+        }
+
+        void finishAllModules() {
+            for (Map.Entry<String,Module> e : modules.entrySet()) {
+                e.getValue().finish();
+            }
         }
     }
 
