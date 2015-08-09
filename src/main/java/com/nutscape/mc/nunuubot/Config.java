@@ -76,7 +76,6 @@ class Config {
     void write(String file) throws IOException
     {
         String s = toString();
-
         Writer out = Files.newBufferedWriter(Paths.get(file));
         for (int i=0; i < s.length(); i++) {
             out.write(s.codePointAt(i));
@@ -90,7 +89,7 @@ class Config {
         Gson gson = new GsonBuilder()
             .serializeNulls()
             .addDeserializationExclusionStrategy(exclusion)
-        .create();
+            .create();
 
         Reader in = Files.newBufferedReader(Paths.get(file));
         Config config = gson.fromJson(in,Config.class);
@@ -104,7 +103,7 @@ class Config {
             .setPrettyPrinting()
             .serializeNulls()
             .addSerializationExclusionStrategy(exclusion)
-        .create();
+            .create();
         return gson.toJson(this);
     }
 }

@@ -7,4 +7,5 @@ public interface BotInterface {
     String getSpecialChar();
     String getCmdPrefix();
     void log(Level level,String msg);
+    void logThrowable(Throwable e);
 }

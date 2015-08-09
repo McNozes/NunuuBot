@@ -20,8 +20,8 @@ class QueryCommand implements Command
 
         CommandFactory fac = new CommandFactory();
         fac.setCmdPrefix(cmdPref);
-        this.comnd = fac.newUserQueryActionPattern(word,map,ca);
-        this.reply = fac.newReplyActionPattern(replyPat,map,ra);
+        this.comnd = fac.newUserCommand(word,new QueryAction(map,ca));
+        this.reply = new ActionPattern(replyPat,new ReplyAction(map,ra));
 
         // Check if this user was queried before.
         reply.setPredicate(new Predicate<IncomingMessage>() {

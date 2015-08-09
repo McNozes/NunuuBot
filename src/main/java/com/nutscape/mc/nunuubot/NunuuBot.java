@@ -23,7 +23,9 @@ public class NunuuBot implements BotInterface {
 
     // SETTINGS
 
-    private static final String VERSION_NUMBER = "0.2";
+    private static final String CONFIG_FILE = "config.json";
+
+    private static final String VERSION_NUMBER = "0.3";
 
     // Must not end in '/':
     private static final String MODULES_DIR = "modules";
@@ -81,13 +83,13 @@ public class NunuuBot implements BotInterface {
             if (config.admins.contains(m.getPrefix())) {
                 // Commands - admin only
                 adminCommand(m);
+                return;
             } else {
                 // Redirect messages to admins
                 for (String ad : config.admins) {
                     irc.sendPrivMessage(ad,m.getNick() + ": "+ m.getContent());
                 }
             }
-            return;
         }
 
         // Send message to all modules.
@@ -244,6 +246,13 @@ public class NunuuBot implements BotInterface {
         }
     }
 
+    public void logThrowable(Throwable e) {
+        log(Level.SEVERE,e.getClass().getSimpleName() + ": " + e.getMessage());
+        for (StackTraceElement s : e.getStackTrace()) {
+            log(Level.FINE,s.toString());
+        }
+    }
+
     // Main
 
     private void run()
@@ -280,14 +289,21 @@ public class NunuuBot implements BotInterface {
                 }
                 processLine(line,millis);
             }
-
-        } catch (IOException e) {
-            System.err.println("IOException: " + e.getMessage());
+        } catch (Exception e) {
+            logThrowable(e);
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        Config newConfig = Config.read("config.json");
-        new NunuuBot(newConfig).run();
+    public static void main(String[] args) {
+        try {
+
+            Config newConfig = Config.read(CONFIG_FILE);
+            new NunuuBot(newConfig).run();
+
+        } catch (IOException e) {
+            System.err.println("IO error: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

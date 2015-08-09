@@ -3,11 +3,33 @@ package com.nutscape.mc.nunuubot.actions;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.nutscape.mc.nunuubot.IRC;
+
 public class CommandFactory {
     private String cmdPrefix = "";
+    private IRC irc;
+
+    public void setCmdPrefix(String cmdPrefix) {
+        this.cmdPrefix = cmdPrefix;
+    }
+
+    public void setIRC(IRC irc) {
+        this.irc = irc;
+    }
+
+    public Command doNothing() {
+        return new Action() {
+            @Override public void doAction(IncomingMessage m,String...args) { }
+        };
+    }
+
+    public ActionPattern newArgCommand(String word,Action action) {
+        String pattern = cmdPrefix + word + " +[^ ]+ *";
+        return new ActionPattern(pattern,new ArgAction(cmdPrefix,action));
+    }
 
     public ActionPattern newUserCommand(String word,Action action) {
-        String pattern = cmdPrefix + word + "( +.*)?";
+        String pattern = cmdPrefix + word + "( +[^ ]+ *)?";
         return new ActionPattern(pattern,new UserAction(cmdPrefix,action));
     }
 
@@ -16,23 +38,12 @@ public class CommandFactory {
         return new QueryCommand(cmdPrefix,word,replyPat,ca,ra);
     }
 
-    ActionPattern newUserQueryActionPattern(
-            String word,
-            Map<String,String> map,
+    public ActionPattern newMappedCommand(String word,Map<String,String> map,
             Action action) {
-        return newUserCommand(word,
-                new QueryCommand.QueryAction(map,action));
+        return newUserCommand(word,new MapGetAction(irc,map,action));
     }
 
-    ActionPattern newReplyActionPattern(
-            Pattern replyPat,
-            Map<String,String> map,
-            Action action) {
-        return new ActionPattern(replyPat,
-                new QueryCommand.ReplyAction(map,action));
-    }
-
-    public void setCmdPrefix(String cmdPrefix) {
-        this.cmdPrefix = cmdPrefix;
+    public ActionPattern newMapPutCommand(String word,Map<String,String> map) {
+        return newArgCommand(word,new MapPutAction(irc,map));
     }
 }

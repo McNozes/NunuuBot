@@ -40,7 +40,7 @@ class Connection {
 
     public void send(String cmd) throws IOException
     {
-        bot.log(Level.INFO,"---> " +  cmd);
+        bot.log(Level.INFO,"> " +  cmd);
         out.write(cmd);
         out.write('\n');
         out.flush();
@@ -75,7 +75,7 @@ class Connection {
                     bot.log(Level.FINE,line);
                 }
             } catch (IOException e) {
-                bot.log(Level.SEVERE,e.toString());
+                bot.logThrowable(e);
             }
         }
     }
