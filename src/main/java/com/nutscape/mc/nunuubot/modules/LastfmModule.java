@@ -185,7 +185,7 @@ public class LastfmModule extends Module
                 }
                 return m + "m " + s + "s ago";
             }
-            return h + "h " + m + "m " + s + "s ago";
+            return h + "h " + m + "m " + " ago";
         }
     };
 

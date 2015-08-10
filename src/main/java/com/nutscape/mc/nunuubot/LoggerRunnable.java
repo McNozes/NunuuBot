@@ -120,11 +120,12 @@ class LoggerRunnable implements Runnable {
 
     public void run()
     {
-        while (true) {
-            try {
+        try {
+            while (true) {
                 LogRecord rec = msgQueue.take();
                 LOGGER.log(rec);
-            } catch (InterruptedException e) { }
-        }
+            }
+        } catch (InterruptedException e) { }
+        LOGGER.log(new LogRecord(Level.FINER,"Exiting LoggerRunnable thread"));
     }
 }

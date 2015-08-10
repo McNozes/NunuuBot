@@ -26,10 +26,6 @@ public class IRC
         }
     }
 
-    public void finish() {
-        connection.finish();
-    }
-
     // ---------------------
 
     public void sendUser(String nick,String mode,String realname) {
@@ -74,6 +70,10 @@ public class IRC
 
     public void sendNotice(String dest,String msg) {
         send("NOTICE " + dest + " :" + msg);
+    }
+
+    public void quit(String msg) {
+        send("QUIT :" + msg);
     }
 
     public void nickservIdentify(String password) {

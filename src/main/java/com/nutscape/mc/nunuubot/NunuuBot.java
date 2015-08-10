@@ -49,6 +49,8 @@ public class NunuuBot implements BotInterface {
     private final Map<String,Module> modules = new HashMap();
     private final BlockingQueue<LogRecord> logQueue
         = new LinkedBlockingQueue<>();
+    private Thread loggerThread;
+    private Thread connectionThread;
 
     /* Constructor halts if a single module fails to initialize.  */
     private NunuuBot(Config config) throws Exception
@@ -69,7 +71,6 @@ public class NunuuBot implements BotInterface {
     // ----------
 
     private void processNotice(IncomingMessage m) {
-        // TODO: catch exceptions
         for (Map.Entry<String,Module> e : modules.entrySet()) {
             Module mod = e.getValue();
             if (mod instanceof NoticeReceiver) {
@@ -101,7 +102,6 @@ public class NunuuBot implements BotInterface {
         }
 
         // Send message to all modules.
-        // TODO: catch exceptions
         for (Map.Entry<String,Module> entry : modules.entrySet()) {
             entry.getValue().privMsg(m);
         }
@@ -272,16 +272,17 @@ public class NunuuBot implements BotInterface {
 
         try {
             // Start logging in its own thread
-            new Thread(new LoggerRunnable(
+            this.loggerThread = new Thread(new LoggerRunnable(
                         this.getClass().getSimpleName(),
                         logQueue,
                         Level.parse(config.logStdLevel),
                         config.logFileDir,
                         Level.parse(config.logFileLevel),
-                        config.newLogFileAtSizeKB)).start();
+                        config.newLogFileAtSizeKB));
+            this.loggerThread.start();
 
             // Connect to the server
-            this.connection.init(
+            this.connectionThread = this.connection.start(
                     config.serverAddress,
                     config.serverPort,
                     config.hostPort,
@@ -290,9 +291,7 @@ public class NunuuBot implements BotInterface {
             irc.sendUser(config.nickname,config.mode,config.realname);
             irc.sendNick(config.nickname);
 
-            boolean stop = false;
-
-            while (!stop || !msgQueue.isEmpty()) {
+            while (true) {
                 String line;
                 long millis;
                 while (true) { // try again if interrupted
@@ -305,7 +304,7 @@ public class NunuuBot implements BotInterface {
                 try {
                     processLine(line,millis);
                 } catch (StopExecutingException e) {
-                    stop = true;
+                    break;
                 } catch (Exception e) {
                     logThrowable(e);
                 }
@@ -322,7 +321,9 @@ public class NunuuBot implements BotInterface {
     private class Finisher implements Runnable {
         @Override public void run() {
             finishAllModules();
-            irc.finish();
+            irc.quit("Goodbye");
+            //connectionThread.interrupt();
+            //loggerThread.interrupt();
         }
 
         void finishAllModules() {

@@ -16,7 +16,6 @@ import java.util.logging.Level;
 class Connection {
     private Writer out;
     private BotInterface bot;
-    MessageFetcher fetcher;
 
     Connection(BotInterface bot) {
         this.bot = bot;
@@ -24,7 +23,7 @@ class Connection {
 
     // ------------
 
-    public void init(
+    public Thread start(
             String serverAddress,
             int serverPort,
             int hostPort,
@@ -35,8 +34,10 @@ class Connection {
         s.connect(new InetSocketAddress(serverAddress,serverPort));
         this.out = new OutputStreamWriter(s.getOutputStream());
 
-        this.fetcher = new MessageFetcher(s.getInputStream(),msgQueue,bot);
-        new Thread(fetcher).start();
+        Runnable fetcher = new MessageFetcher(s.getInputStream(),msgQueue,bot);
+        Thread thread = new Thread(fetcher);
+        thread.start();
+        return thread;
     }
 
     public void send(String cmd) throws IOException
@@ -67,30 +68,19 @@ class Connection {
 
         public void run() {
             try {
-                while (!stop || !queue.isEmpty()) {
+                while (true) {
                     String line = in.readLine();
                     if (line == null) { // TODO: figure out reason for nulls
                         bot.log(Level.SEVERE,"Null line in MessageFetcher");
                         break;
                     }
-                    try {
                         queue.put(line);
-                    } catch (InterruptedException e) {
-                        System.err.println("Interrupted: " + e);
-                    }
                     bot.log(Level.FINE,line);
                 }
             } catch (IOException e) {
                 bot.logThrowable(e);
-            }
+            } catch (InterruptedException e) { }
+            bot.log(Level.FINER,"Exiting Connection thread");
         }
-
-        public void finish() {
-            this.stop = true;
-        }
-    }
-
-    public void finish() {
-        fetcher.finish();
     }
 }
