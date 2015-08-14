@@ -12,10 +12,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +31,7 @@ import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.BotInterface;
 import com.nutscape.mc.nunuubot.actions.Action;
 import com.nutscape.mc.nunuubot.actions.CommandFactory;
-import com.nutscape.mc.nunuubot.actions.CommandContainer;
+import com.nutscape.mc.nunuubot.actions.ActionContainer;
 
 /* 
  * From LastFM's API documentation, on conversion from XML to JSON:
@@ -56,7 +53,7 @@ public class LastfmModule extends Module
     private final String API_URL = "http://ws.audioscrobbler.com/2.0/";
     private final String MAP_FILE = "lastfm_users.json";
 
-    private final CommandContainer commands = new CommandContainer();
+    private final ActionContainer commands = new ActionContainer();
 
     private Map<String,String> userMap = 
         new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -68,8 +65,7 @@ public class LastfmModule extends Module
 
         loadMap();
 
-        CommandFactory fac = new CommandFactory();
-        fac.setCmdPrefix(bot.getCmdPrefix());
+        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
         fac.setIRC(irc);
 
         String pf = "((lf)|(lfm)|(fm))";
@@ -81,7 +77,7 @@ public class LastfmModule extends Module
 
     private Action playCountAction = new Action() {
         @Override
-        public void doAction(IncomingMessage m,String... args) {
+        public boolean accept(IncomingMessage m,String... args) {
             try {
                 String nick = args[0];
                 String target = args[1];
@@ -89,7 +85,7 @@ public class LastfmModule extends Module
                 JsonObject resp = makeJsonRequest(url);
                 if (resp.has("error")) {
                     handleResponseError(resp,m);
-                    return;
+                    return true;
                 }
                 JsonObject userObject = resp.get("user").getAsJsonObject();
                 String user = userObject.get("name").getAsString();
@@ -102,12 +98,20 @@ public class LastfmModule extends Module
             } catch (IOException e) {
                 bot.logThrowable(e);
             }
+            return true;
+        }
+    };
+
+    private Action compareAction = new Action() {
+        @Override
+        public boolean accept(IncomingMessage m,String... args) {
+            return true;
         }
     };
 
     private Action nowPlaying = new Action() {
         @Override 
-        public void doAction(IncomingMessage m,String... args) {
+        public boolean accept(IncomingMessage m,String... args) {
             try {
                 String nick = args[0];
                 String target = args[1];
@@ -118,14 +122,14 @@ public class LastfmModule extends Module
                 // Check for errors
                 if (resp.has("error")) {
                     handleResponseError(resp,m);
-                    return;
+                    return true;
                 }
                 StringBuilder msg = new StringBuilder();
                 JsonElement el = getObject(resp,"recenttracks").get("track");
                 if (!el.isJsonArray()) {
                     JsonObject track = el.getAsJsonObject();
                     msg.append(nick);
-                    msg.append(": ");
+                    msg.append(" played ");
                     msg.append(getTrackString(track));
                     msg.append(" ");
                     msg.append(getTimeString(track));
@@ -146,6 +150,7 @@ public class LastfmModule extends Module
             } catch (IOException e) {
                 bot.logThrowable(e);
             }
+            return true;
         }
 
         private String getTrackString(JsonObject track)
@@ -237,12 +242,13 @@ public class LastfmModule extends Module
     }
 
     private Action saveMap = new Action() {
-        @Override public void doAction(IncomingMessage m,String...args) {
+        @Override public boolean accept(IncomingMessage m,String...args) {
             newUsers++;
             if (SAVE_USERS_INTERVAL == newUsers) {
                 newUsers = 0;
                 saveMap();
             }
+            return true;
         }
     };
 

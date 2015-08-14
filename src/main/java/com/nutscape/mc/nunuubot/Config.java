@@ -27,7 +27,7 @@ class Config {
     int serverPort = 6667;
     int hostPort = 50003;
     boolean useClassReloading = true;
-    char specialChar = '\\';
+    char specialChar = ':';
     String logStdLevel = "FINE";
     String logFileLevel = "ALL";
     String logFileDir = ".";
@@ -52,8 +52,13 @@ class Config {
     String cmdPrefix;
 
     Config() {
-        this.cmdPrefix =  "^(" + nickname + "[-:, ]+|" +
-            specialChar + " *)";
+        this.cmdPrefix =  "^(" + nickname + "[^a-z0-9]?|[" +
+            specialChar + "])";
+        if (specialChar == '\'') {
+            throw new IllegalArgumentException(
+                    "Cannot use that as special character."
+                    );
+        }
     }
 
     static private ExclusionStrategy exclusion = new ExclusionStrategy()

@@ -2,7 +2,6 @@ package com.nutscape.mc.nunuubot;
 
 import java.io.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.util.logging.Level;

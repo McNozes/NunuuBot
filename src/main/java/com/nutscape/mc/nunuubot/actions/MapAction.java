@@ -1,5 +1,4 @@
 package com.nutscape.mc.nunuubot.actions;
-
 import java.util.Map;
 
 import com.nutscape.mc.nunuubot.IRC;
@@ -17,15 +16,15 @@ class MapGetAction extends Action {
 
     // '@' skips the mapping action
     @Override
-    public void doAction(IncomingMessage m,String... args) {
+    public boolean accept(IncomingMessage m,String... args) {
         String key = args[0];
         String target = (key.charAt(0) == '@') ?
             key.substring(1) : map.get(key);
-
-        if (target == null) {
+        if (target == null) {               // not found
             irc.sendPrivMessage(m.getDestination(), key + ": user not found");
+            return true;
         } else {
-            nextAction.doAction(m,key,target);
+            return nextAction.accept(m,key,target);
         }
     }
 }
@@ -41,51 +40,10 @@ class MapPutAction extends Action {
     }
 
     @Override
-    public void doAction(IncomingMessage m,String... args) {
-        String target = args[0];
-        map.put(m.getNick(),target);
-        irc.sendPrivMessage(m.getNick(),"User " + target + " set");
-        nextAction.doAction(m,target);
+    public boolean accept(IncomingMessage m,String... args) {
+        String username = args[0];
+        map.put(m.getNick(),username);
+        irc.sendPrivMessage(m.getNick(),"User " + username + " set");
+        return nextAction.accept(m,username);
     }
 }
-
-/*
-class MapActionPattern implements Command
-{
-    private ActionPattern mapAction;
-    private ActionPattern mapPut;
-    
-    MapActionPattern(
-            String prefix,
-            String commandWord,
-            String setWord,
-            IRC irc,
-            boolean caseIns,
-            Action action)
-    {
-        // Nick comparison is case insensitive in IRC.
-        Map<String,String> map;
-        if (caseIns) {
-            map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        } else {
-            map = new HashMap<>();
-        }
-
-        CommandFactory fac = new CommandFactory();
-        fac.setCmdPrefix(prefix);
-
-        this.mapAction = fac.newUserCommand(commandWord,new MapGetAction(irc,map,action));
-
-        this.mapPut = fac.newArgCommand(setWord,new MapPutAction(map));
-    }
-
-    @Override
-    public boolean accept(IncomingMessage m){
-        return mapPut.accept(m) || mapAction.accept(m);
-    }
-
-    // -------------
-
-}
-*/
-

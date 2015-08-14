@@ -13,7 +13,6 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Formatter;
-import java.util.logging.SimpleFormatter;
 import java.util.logging.Filter;
 
 //import static java.nio.file.StandardOpenOption.*;

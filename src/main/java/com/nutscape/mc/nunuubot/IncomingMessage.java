@@ -1,7 +1,6 @@
 package com.nutscape.mc.nunuubot;
 
 import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /**
  * Contains an IRC message parsed into its basic components, bundled with a
@@ -24,7 +23,7 @@ public class IncomingMessage {
     private final static Pattern userPrefixRegex =
         Pattern.compile("[^!]+!([^@]+@.*)?");
 
-    IncomingMessage(String line,long timestamp) {
+    public IncomingMessage(String line,long timestamp) {
         this.timestamp = timestamp;
 
         /* Each line is composed of an optional prefix, a command, and

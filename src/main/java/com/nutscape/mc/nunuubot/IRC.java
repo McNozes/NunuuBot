@@ -1,8 +1,6 @@
 package com.nutscape.mc.nunuubot;
-
+ 
 import java.io.IOException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /** "Interface" bots use to communicate with the relay.
  *   Offers IRC services to clients. Tries to look like a normal IRC client,

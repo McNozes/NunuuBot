@@ -1,19 +1,14 @@
 package com.nutscape.mc.nunuubot;
 
 import java.io.*;
-import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.logging.LogRecord;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 class ModuleInstantiationException extends Exception { 
     ModuleInstantiationException(Exception e) { super(e); }

@@ -1,12 +1,6 @@
 package com.nutscape.mc.nunuubot;
 
-import java.util.Properties;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.nio.file.FileSystems;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

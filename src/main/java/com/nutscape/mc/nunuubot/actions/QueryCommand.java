@@ -7,70 +7,59 @@ import java.util.function.Predicate;
 
 import com.nutscape.mc.nunuubot.IncomingMessage;
 
-class QueryCommand implements Command
+class QueryPairAction extends Action
 {
-    protected ActionPattern comnd;
-    protected ActionPattern reply;
+    protected Action comnd;
+    protected Action reply;
 
-    public QueryCommand(String cmdPref,String word,Pattern replyPat,
+    /* Nick comparison is case insensitive in IRC. */
+    protected Map<String,String> map =
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+    public QueryPairAction(String cmdPref,String word,Pattern replyPat,
             Action ca,Action ra) {
-
-        /* Nick comparison is case insensitive in IRC. */
-        Map<String,String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-        CommandFactory fac = new CommandFactory();
-        fac.setCmdPrefix(cmdPref);
-        this.comnd = fac.newUserCommand(word,new QueryAction(map,ca));
-        this.reply = new ActionPattern(replyPat,new ReplyAction(map,ra));
-
-        // Check if this user was queried before.
-        reply.setPredicate(new Predicate<IncomingMessage>() {
-            @Override
-            public boolean test(IncomingMessage m) {
-                return map.containsKey(m.getNick());
-            }
-        });
+        CommandFactory fac = new CommandFactory(cmdPref);
+        this.comnd = fac.newUserCommand(word,new QueryAction(ca));
+        this.reply = new PatternAction(replyPat,new ReplyAction(ra));
     }
 
     @Override
-    public boolean accept(IncomingMessage m){
-        if (m.getCommand().equals("PRIVMSG"))
-            return comnd.accept(m);
-        return reply.accept(m);
+    public boolean accept(IncomingMessage m,String...args){
+        if (m.getCommand().equals("PRIVMSG")) {
+            return comnd.accept(m,args);
+        } else {
+            return reply.accept(m,args);
+        }
     }
 
     // Action for sending the query.
-    static class QueryAction extends Action {
-        protected Map<String,String> map;
-
-        public QueryAction(Map<String,String> map,Action action) {
+    class QueryAction extends Action {
+        public QueryAction(Action action,String...args) {
             super(action);
-            this.map = map;
         }
 
         @Override
-        public void doAction(IncomingMessage m,String... args) {
-            String target = args[0];
+        public boolean accept(IncomingMessage m,String... args) {
+            String target = args[args.length-1];
             String channel = m.getDestination();
             map.put(target,channel);
-            nextAction.doAction(m,args[0]);
+            return nextAction.accept(m,args[0]);
         }
     }
 
     // Action for receiving the reply to the query.
-    static class ReplyAction extends Action {
-        protected Map<String,String> map;
-
-        public ReplyAction(Map<String,String> map,Action action) {
+    class ReplyAction extends Action {
+        public ReplyAction(Action action) {
             super(action);
-            this.map = map;
         }
 
         @Override
-        public void doAction(IncomingMessage m,String... args) {
+        public boolean accept(IncomingMessage m,String... args) {
             String channel = map.remove(m.getNick());
-            nextAction.doAction(m,channel);
+            if (channel == null) {
+                return false;
+            }
+            return nextAction.accept(m,channel);
         }
     }
 }
-

@@ -1,7 +1,6 @@
 package com.nutscape.mc.nunuubot.modules;
 
 import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;

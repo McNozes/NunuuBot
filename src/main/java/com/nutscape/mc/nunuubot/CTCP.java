@@ -1,7 +1,6 @@
 package com.nutscape.mc.nunuubot;
 
 import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /**
  * Client To Client Protocol
