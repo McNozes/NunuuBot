@@ -1,9 +1,7 @@
 package com.nutscape.mc.nunuubot.actions;
 
-import java.util.regex.Pattern;
-import java.util.function.Predicate;
-
 import com.nutscape.mc.nunuubot.IncomingMessage;
+import java.util.regex.Pattern;
 
 /* Do an action when a pattern is matched */
 class PatternAction extends Action {
@@ -21,9 +19,6 @@ class PatternAction extends Action {
 
     @Override
     public boolean accept(IncomingMessage m,String... args) {
-        // DEBUG_BEGIN
-        System.out.println("Debug: " + pattern);
-        // DEBUG_END
         if (pattern.matcher(m.getContent()).matches()) {
             return nextAction.accept(m,args);
         }

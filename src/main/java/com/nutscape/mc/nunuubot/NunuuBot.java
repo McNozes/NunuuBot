@@ -236,8 +236,8 @@ public class NunuuBot implements BotInterface {
         return config.nickname;
     }
 
-    public String getSpecialChar() {
-        return config.nickname;
+    public char getSpecialChar() {
+        return config.specialChar;
     }
 
     public String getCmdPrefix() {
@@ -317,8 +317,8 @@ public class NunuuBot implements BotInterface {
         @Override public void run() {
             finishAllModules();
             irc.quit("Goodbye");
-            //connectionThread.interrupt();
-            //loggerThread.interrupt();
+            connectionThread.interrupt();
+            loggerThread.interrupt();
         }
 
         void finishAllModules() {

@@ -1,11 +1,9 @@
 package com.nutscape.mc.nunuubot.actions;
 
+import com.nutscape.mc.nunuubot.IncomingMessage;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
-import java.util.function.Predicate;
-
-import com.nutscape.mc.nunuubot.IncomingMessage;
 
 class QueryPairAction extends Action
 {

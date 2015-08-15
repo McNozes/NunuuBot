@@ -51,13 +51,12 @@ class Config {
 
     String cmdPrefix;
 
-    Config() {
-        this.cmdPrefix =  "^(" + nickname + "[^a-z0-9]?|[" +
-            specialChar + "])";
+    private void init() {
+        this.cmdPrefix =  
+            "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
         if (specialChar == '\'') {
             throw new IllegalArgumentException(
-                    "Cannot use that as special character."
-                    );
+                    "Cannot use that as special character.");
         }
     }
 
@@ -100,6 +99,7 @@ class Config {
         Config config = gson.fromJson(in,Config.class);
         if (in != null)
             in.close();
+        config.init();
         return config;
     }
 

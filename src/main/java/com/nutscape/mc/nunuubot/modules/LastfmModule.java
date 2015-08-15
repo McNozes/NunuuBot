@@ -69,9 +69,14 @@ public class LastfmModule extends Module
         fac.setIRC(irc);
 
         String pf = "((lf)|(lfm)|(fm))";
-        commands.add(fac.newMappedCommand(pf+"count",userMap,playCountAction));
-        commands.add(fac.newMappedCommand(pf + "?np",userMap,nowPlaying));
+        String mapString = bot.getSpecialChar() + "lfmset";
+        commands.add(fac.newMappedCommand(pf+"count",
+                    userMap,mapString,playCountAction));
+        commands.add(fac.newMappedCommand(pf+"?np",
+                    userMap,mapString,nowPlaying));
         commands.add(fac.newMapPutCommand(pf+"set",userMap,saveMap));
+        commands.add(fac.newDoubleMappedCommand(pf+"?compare",
+                    userMap,mapString,compareAction));
     }
     // -----------
 
@@ -103,8 +108,38 @@ public class LastfmModule extends Module
     };
 
     private Action compareAction = new Action() {
+        public static final String ARTISTS_LIMIT = "5";
+
         @Override
         public boolean accept(IncomingMessage m,String... args) {
+            try {
+                String nick1 = args[0];
+                String nick2 = args[1];
+                String user1 = args[2];
+                String user2 = args[3];
+                String type1 = "user";
+                String type2 = "user";
+                URL url = formBaseRequestURL("tasteometer.compare",
+                        "&type1=" + type1 +
+                        "&type2=" + type2 +
+                        "&value1=" + user1 +
+                        "&value2=" + user2 +
+                        "&limit=" + ARTISTS_LIMIT);
+                JsonObject resp = makeJsonRequest(url);
+                // Check for errors
+                if (resp.has("error")) {
+                    handleResponseError(resp,m);
+                    return true;
+                }
+                StringBuilder msg = new StringBuilder();
+                JsonObject ob2 = getObject(resp,"comparison");
+                JsonObject ob3 = getObject(ob2,"result");
+                String score = getString(ob3,"score");
+                //JsonElement el = .get("result");
+                irc.sendPrivMessage(m.getDestination(),"score = " + score);
+            } catch (IOException e) {
+                bot.logThrowable(e);
+            }
             return true;
         }
     };
@@ -116,7 +151,7 @@ public class LastfmModule extends Module
                 String nick = args[0];
                 String target = args[1];
                 URL url = formBaseRequestURL("user.getRecentTracks",
-                        "&user="+target + "&limit=1");
+                        "&user=" + target + "&limit=1");
 
                 JsonObject resp = makeJsonRequest(url);
                 // Check for errors
@@ -138,8 +173,8 @@ public class LastfmModule extends Module
                     // is currently playing.
                     JsonArray array = el.getAsJsonArray();
                     // It's the second element
-                    JsonObject track = array.get(1).getAsJsonObject();
-                    msg.append(target);
+                    JsonObject track = array.get(0).getAsJsonObject();
+                    msg.append(nick);
                     msg.append(" is now playing ");
                     msg.append(getTrackString(track));
                 }
@@ -205,7 +240,7 @@ public class LastfmModule extends Module
     private void handleResponseError(JsonObject o,IncomingMessage m) {
         String error = o.get("error").getAsString();
         String message = o.get("message").getAsString();;
-        bot.log(Level.WARNING,error + ": " + message);
+        bot.log(Level.WARNING,"last.fm: "+ error + ": " + message);
         if (error.equals("7")) {
             irc.sendPrivMessage(m.getDestination(),"Invalid request.");
         }

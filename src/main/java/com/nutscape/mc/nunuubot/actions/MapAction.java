@@ -7,25 +7,36 @@ import com.nutscape.mc.nunuubot.IncomingMessage;
 class MapGetAction extends Action {
     private Map<String,String> map;
     private IRC irc;
+    private int argIndex;
+    private String mapCommandString;
 
-    public MapGetAction(IRC irc,Map<String,String> map,Action action) {
+    public MapGetAction(IRC irc,Map<String,String> map,int argIndex,
+            String mapCommandString,Action action) {
         super(action);
         this.map = map;
         this.irc = irc;
+        this.argIndex = argIndex;
+        this.mapCommandString = mapCommandString;
     }
 
     // '@' skips the mapping action
     @Override
     public boolean accept(IncomingMessage m,String... args) {
-        String key = args[0];
-        String target = (key.charAt(0) == '@') ?
+        String key = args[argIndex];
+        String value = (key.charAt(0) == '@') ?
             key.substring(1) : map.get(key);
-        if (target == null) {               // not found
-            irc.sendPrivMessage(m.getDestination(), key + ": user not found");
+        if (value == null) {               // not found
+            irc.sendPrivMessage(m.getDestination(), 
+                    key + ": not found. Send me a pvt with " +
+                    mapCommandString + " <username>");
             return true;
-        } else {
-            return nextAction.accept(m,key,target);
         }
+        // Add the value to the end of argument list
+        int n = args.length;
+        String[] newArgs = new String[n+1];
+        newArgs[n] = value;
+        System.arraycopy(args,0,newArgs,0,n);
+        return nextAction.accept(m,newArgs);
     }
 }
 

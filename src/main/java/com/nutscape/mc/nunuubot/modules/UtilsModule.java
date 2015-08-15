@@ -67,6 +67,7 @@ public class UtilsModule extends Module implements NoticeReceiver
                 return true;
             }
         };
+
         Action pingReply = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
@@ -78,6 +79,7 @@ public class UtilsModule extends Module implements NoticeReceiver
                 return true;
             }
         };
+
         addPair(fac.newQueryCommand("ping",
                     CTCP.Query.PING.replyPattern,ping,pingReply));
 

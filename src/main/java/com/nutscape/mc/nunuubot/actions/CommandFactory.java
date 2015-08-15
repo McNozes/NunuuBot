@@ -1,10 +1,11 @@
 package com.nutscape.mc.nunuubot.actions;
 
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
+import com.nutscape.mc.nunuubot.actions.Action;
+import com.nutscape.mc.nunuubot.actions.CommandFactory;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class CommandFactory {
     private String cmdPrefix;
@@ -37,25 +38,31 @@ public class CommandFactory {
         return new PatternAction(pattern,getArgs);
     }
 
+    // Simple commands
+
     /* Command of type 'cmd arg1, arg2, ..., arg_nargs' */
-    public Action newCommand(String cmd,Action action,int nargs) {
+    public Action newCommand(String cmd,int nargs,Action action) {
         return newCommand(cmd,action,nargs,false);
     }
 
     /* Command of type 'cmd arg1' */
     public Action newCommand(String cmd,Action action) {
-        return newCommand(cmd,action,1);
+        return newCommand(cmd,1,action);
     }
 
+    // Commands with option user
+
     /* Command of type 'cmd arg1, ..., arg_nargs [target]' */
-    public Action newUserCommand(String cmd,Action action,int nargs) {
+    public Action newUserCommand(String cmd,int nargs,Action action) {
         return newCommand(cmd,action,nargs,true);
     }
 
     /* Command of type 'cmd [target]' */
     public Action newUserCommand(String cmd,Action action) {
-        return newUserCommand(cmd,action,1);
+        return newUserCommand(cmd,1,action);
     }
+
+    // Queries
 
     /* Command of type 'query [target]' */
     public Action newQueryCommand(String cmd,Pattern replyPat,
@@ -63,10 +70,28 @@ public class CommandFactory {
         return new QueryPairAction(cmdPrefix,cmd,replyPat,ca,ra);
     }
 
+    // Maps
+
+    /* Command of type 'cmd arg ... key ....arg ...' */
+    public Action newMappedCommand(String cmd,Map<String,String> map,
+            int argIndex,String mapCommandString, Action action) {
+        return newUserCommand(cmd,
+                new MapGetAction(irc,map,argIndex,mapCommandString,action));
+    }
+
     /* Command of type 'cmd [nick]' */
     public Action newMappedCommand(String cmd,Map<String,String> map,
-            Action action) {
-        return newUserCommand(cmd,new MapGetAction(irc,map,action));
+            String mapCommandString, Action action) {
+        return newMappedCommand(cmd,map,0,mapCommandString,action);
+    }
+
+    /* Command of type 'cmd nick1 [nick2]' */
+    public Action newDoubleMappedCommand(String cmd,Map<String,String> map,
+            String mapString, Action action) {
+        Action second = new MapGetAction(irc,map,1,mapString,action);
+        Action first = new MapGetAction(irc,map,0,mapString,second);
+        int nargs = 2;
+        return newUserCommand(cmd,nargs,first);
     }
 
     /* Command of type 'cmd-set value'. */
@@ -139,7 +164,8 @@ class GetCmdArgumentsAction extends Action {
 
     @Override
     public boolean accept(IncomingMessage m,String... args) {
-        String noPrefix = m.getContent().replaceAll(cmdPrefix,"");
+        String noPrefix = m.getContent().replaceAll(cmdPrefix,"")
+            .replaceAll("^ +","");
         String[] parts = noPrefix.split(" ");
         String[] newArgs;
         if (parts.length == 1 && parts[0].equals("")) {
