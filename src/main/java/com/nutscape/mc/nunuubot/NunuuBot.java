@@ -10,9 +10,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-class StopExecutingException extends Exception { }
-
 class NunuuBot implements BotInterface {
+    class StopExecutingException extends Exception { }
 
     // SETTINGS
     // TODO: log file names here.
@@ -131,7 +130,7 @@ class NunuuBot implements BotInterface {
     }
 
     private void loadModule(String shortName)
-        throws ModuleInstantiationException {
+        throws Module.ModuleInstantiationException {
         // TODO: do a module name check 
 
         // Loading a loaded module is equivalent to reloading.
@@ -139,7 +138,7 @@ class NunuuBot implements BotInterface {
             unloadModule(shortName);
         }
         String fullName = MODULES_PREFIX + "." + shortName;
-        Module m = ModuleFactory.newModule(shortName,fullName,
+        Module m = Module.newModule(shortName,fullName,
                 config.useClassReloading,irc,this);
         modules.put(shortName,m);
         log(Level.INFO,"Modules: loaded " + shortName);
@@ -166,7 +165,7 @@ class NunuuBot implements BotInterface {
                     return;
                 try {
                     loadModule(cmd[1]);
-                } catch (ModuleInstantiationException e) {
+                } catch (Module.ModuleInstantiationException e) {
                     irc.sendPrivMessage(m.getNick(),
                             "error: " + e.getCause().getMessage());
                 }

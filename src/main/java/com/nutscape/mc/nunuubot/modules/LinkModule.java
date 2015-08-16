@@ -9,7 +9,8 @@ import com.nutscape.mc.nunuubot.IncomingMessage;
 
 public class LinkModule extends Module
 {
-    public LinkModule(IRC irc,BotInterface bot) {
+    public LinkModule(IRC irc,BotInterface bot) 
+        throws ModuleInstantiationException {
         super(irc,bot);
     }
 

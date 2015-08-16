@@ -17,7 +17,8 @@ public class HelloModule extends Module
 {
     private final ActionContainer commands = new ActionContainer();
 
-    public HelloModule(IRC irc,BotInterface bot) {
+    public HelloModule(IRC irc,BotInterface bot) 
+        throws ModuleInstantiationException {
         super(irc,bot);
 
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());

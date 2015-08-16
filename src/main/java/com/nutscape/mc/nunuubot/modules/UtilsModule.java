@@ -22,7 +22,8 @@ public class UtilsModule extends Module implements NoticeReceiver
         replies.add(pair);
     }
 
-    public UtilsModule(IRC irc,BotInterface bot) {
+    public UtilsModule(IRC irc,BotInterface bot) 
+        throws ModuleInstantiationException {
         super(irc,bot);
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
 

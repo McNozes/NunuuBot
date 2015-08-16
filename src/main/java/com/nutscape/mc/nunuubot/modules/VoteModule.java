@@ -7,7 +7,8 @@ import com.nutscape.mc.nunuubot.BotInterface;
 
 public class VoteModule extends Module
 {
-    public VoteModule(IRC irc,BotInterface bot) {
+    public VoteModule(IRC irc,BotInterface bot) 
+        throws ModuleInstantiationException{
         super(irc,bot);
     }
 

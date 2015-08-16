@@ -13,10 +13,15 @@ import java.io.IOException;
  * TODO: make assynchronous.
  */
 public abstract class Module {
+    public static class ModuleInstantiationException extends Exception { 
+        public ModuleInstantiationException(Exception e) { super(e); }
+    }
+
     protected BotInterface bot;
     protected IRC irc;    // Output interface.
 
-    public Module(IRC irc,BotInterface bot) {
+    public Module(IRC irc,BotInterface bot)
+        throws ModuleInstantiationException {
         this.bot = bot;
         this.irc = irc;
     }
@@ -32,13 +37,10 @@ public abstract class Module {
     protected boolean match(Pattern p,String s) {
         return p.matcher(s).matches();
     }
-}
 
-class ModuleInstantiationException extends Exception { 
-    ModuleInstantiationException(Exception e) { super(e); }
-}
-
-class ModuleFactory {
+    /*
+     * Factory method.
+     */
     static Module newModule(
             String shortName,
             String fullName,
@@ -73,7 +75,7 @@ class ModuleFactory {
         }
     }
 
-    /* Note: Classes loaded from different class loaders are put in different
+    /* Note: Classes loaded from different classloaders are put in different
      * packages. */
     static class ModuleClassLoader extends ClassLoader {
 
@@ -120,3 +122,4 @@ class ModuleFactory {
         }
     }
 }
+
