@@ -73,13 +73,16 @@ public class LastfmModule extends Module
         commands.add(fac.newMappedCommand(pf+"count",
                     userMap,mapString,playCountAction));
         commands.add(fac.newMappedCommand(pf+"?np",
-                    userMap,mapString,nowPlaying));
+                    userMap,mapString,new NowPlayingAction(false)));
+        commands.add(fac.newMappedCommand(pf+"?npalbum",
+                    userMap,mapString,new NowPlayingAction(true)));
         commands.add(fac.newMapPutCommand(pf+"set",userMap,saveMap));
         commands.add(fac.newDoubleMappedCommand(pf+"?compare",
                     userMap,mapString,compareAction));
     }
     // -----------
 
+    /* Show a user's play count. */
     private Action playCountAction = new Action() {
         @Override
         public boolean accept(IncomingMessage m,String... args) {
@@ -107,6 +110,7 @@ public class LastfmModule extends Module
         }
     };
 
+    /* Show a comparison between two users. */
     private Action compareAction = new Action() {
         public static final String ARTISTS_LIMIT = "5";
 
@@ -132,11 +136,28 @@ public class LastfmModule extends Module
                     return true;
                 }
                 StringBuilder msg = new StringBuilder();
-                JsonObject ob2 = getObject(resp,"comparison");
-                JsonObject ob3 = getObject(ob2,"result");
-                String score = getString(ob3,"score");
-                //JsonElement el = .get("result");
-                irc.sendPrivMessage(m.getDestination(),"score = " + score);
+                JsonObject obj = 
+                    getObject(getObject(resp,"comparison"),"result");
+                Double score = 100.0*Double.valueOf(getString(obj,"score"));
+                String scoreString = String.format("%.2f",score);
+
+                msg.append(nick1);
+                msg.append(" is ");
+                msg.append(IRC.Colors.bold(scoreString.toString()));
+                msg.append("% compatible with ");
+                msg.append(nick2);
+                msg.append(". Artists in common: ");
+                JsonArray artistsArray = 
+                    getObject(obj,"artists").get("artist").getAsJsonArray();
+                for (JsonElement artistElement : artistsArray) {
+                    JsonObject artistObject = artistElement.getAsJsonObject();
+                    String name = getString(artistObject,"name");
+                    msg.append(IRC.Colors.bold(name));
+                    msg.append(", ");
+                }
+                msg.setLength(msg.length()-2);
+
+                irc.sendPrivMessage(m.getDestination(),msg.toString());
             } catch (IOException e) {
                 bot.logThrowable(e);
             }
@@ -144,7 +165,14 @@ public class LastfmModule extends Module
         }
     };
 
-    private Action nowPlaying = new Action() {
+    /* Show what the user is playing or has played */
+    private class NowPlayingAction extends Action {
+        private boolean album;
+
+        NowPlayingAction(boolean album) {
+            this.album = album;
+        }
+
         @Override 
         public boolean accept(IncomingMessage m,String... args) {
             try {
@@ -191,13 +219,16 @@ public class LastfmModule extends Module
         private String getTrackString(JsonObject track)
         {
             StringBuilder builder = new StringBuilder();
-            builder.append("\"");
-            builder.append(getString(track,"name"));
-            builder.append("\" by \"");
-            builder.append(getString(getObject(track,"artist"),"#text"));
-            builder.append("\" (\"");
-            builder.append(getString(getObject(track,"album"),"#text"));
-            builder.append("\")");
+            builder.append(IRC.Colors.bold(getString(track,"name")));
+            builder.append(" by ");
+            builder.append(IRC.Colors.bold(
+                        getString(getObject(track,"artist"),"#text")));
+            if (album) {
+                builder.append(" (");
+                builder.append(IRC.Colors.bold(
+                            getString(getObject(track,"album"),"#text")));
+                builder.append(")");
+            }
             return builder.toString();
         }
 

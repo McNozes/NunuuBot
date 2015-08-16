@@ -3,8 +3,8 @@ package com.nutscape.mc.nunuubot.modules;
 import java.util.regex.Pattern;
 
 import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IRC.CTCP;
 import com.nutscape.mc.nunuubot.IncomingMessage;
-import com.nutscape.mc.nunuubot.CTCP;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.BotInterface;
 import com.nutscape.mc.nunuubot.NoticeReceiver;
@@ -14,7 +14,6 @@ import com.nutscape.mc.nunuubot.actions.CommandFactory;
 
 public class UtilsModule extends Module implements NoticeReceiver
 {
-    private CTCP ctcp;
     private final ActionContainer commands = new ActionContainer();
     private final ActionContainer replies =  new ActionContainer();
 
@@ -25,31 +24,29 @@ public class UtilsModule extends Module implements NoticeReceiver
 
     public UtilsModule(IRC irc,BotInterface bot) {
         super(irc,bot);
-        this.ctcp = new CTCP(irc);
-
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
 
         // Add CTCP queries
 
-        CTCP.Query[] supportedQueries = new CTCP.Query[] {
-            CTCP.Query.VERSION,
-            CTCP.Query.TIME,
-            CTCP.Query.CLIENTINFO
+        CTCP[] supportedQueries = new CTCP[] {
+            CTCP.VERSION,
+            CTCP.TIME,
+            CTCP.CLIENTINFO
         };
-        for (CTCP.Query query : supportedQueries) {
+        for (CTCP query : supportedQueries) {
             String word = query.toString();  // case is not important
             Pattern replyPat = query.replyPattern;
             Action cAct = new Action() {
                 @Override
                 public boolean accept(IncomingMessage m,String... args) {
-                    ctcp.query(query,args[0]);
+                    irc.query(query,args[0]);
                     return true;
                 }
             };
             Action rAct = new Action() {
                 @Override
                 public boolean accept(IncomingMessage m,String... args) {
-                    String arg = CTCP.getArgs(query,m.getContent());
+                    String arg = query.getArgs(m.getContent());
                     irc.sendPrivMessage(args[0],m.getNick() + ": " + arg);
                     return true;
                 }
@@ -63,7 +60,7 @@ public class UtilsModule extends Module implements NoticeReceiver
             @Override
             public boolean accept(IncomingMessage m,String... args) {
                 Long timestamp = System.currentTimeMillis();
-                ctcp.query(CTCP.Query.PING,args[0],timestamp.toString());
+                irc.query(CTCP.PING,args[0],timestamp.toString());
                 return true;
             }
         };
@@ -72,7 +69,7 @@ public class UtilsModule extends Module implements NoticeReceiver
             @Override
             public boolean accept(IncomingMessage m,String... args) {
                 // TODO: move
-                String arg = CTCP.getArgs(CTCP.Query.PING,m.getContent());
+                String arg = CTCP.PING.getArgs(m.getContent());
                 Long sentTime = Long.valueOf(arg);
                 Long delta = m.getTimestamp() - sentTime;
                 irc.sendPrivMessage(args[0],m.getNick() + ": " + delta + "ms");
@@ -81,7 +78,7 @@ public class UtilsModule extends Module implements NoticeReceiver
         };
 
         addPair(fac.newQueryCommand("ping",
-                    CTCP.Query.PING.replyPattern,ping,pingReply));
+                    CTCP.PING.replyPattern,ping,pingReply));
 
         // HOST
 
@@ -95,7 +92,18 @@ public class UtilsModule extends Module implements NoticeReceiver
             }
         };
         addPair(fac.newQueryCommand("host",
-                    CTCP.Query.PING.replyPattern,ping,hostReply));
+                    CTCP.PING.replyPattern,ping,hostReply));
+
+        // WHOIS
+
+        Action sendWhois = new Action() {
+            @Override
+            public boolean accept(IncomingMessage m,String... args) {
+                irc.whois(args[0]);
+                return true;
+            }
+        };
+        addPair(fac.newUserCommand("whois",sendWhois));
     }
 
     // ---------

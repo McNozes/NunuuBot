@@ -1,0 +1,48 @@
+Starting a new Gradle Daemon for this build (subsequent builds will be faster).
+:compileJava UP-TO-DATE
+:processResources UP-TO-DATE
+:classes UP-TO-DATE
+:run
+Reading: /com/nutscape/mc/nunuubot/modules/HelloModule.class
+Reading: /com/nutscape/mc/nunuubot/modules/HelloModule$1.class
+Reading: /com/nutscape/mc/nunuubot/modules/LinkModule.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule$2.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule$1.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule$4.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule$3.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule$5.class
+Reading: /com/nutscape/mc/nunuubot/modules/UtilsModule$6.class
+Reading: /com/nutscape/mc/nunuubot/modules/LastfmModule.class
+Reading: /com/nutscape/mc/nunuubot/modules/LastfmModule$1.class
+Reading: /com/nutscape/mc/nunuubot/modules/LastfmModule$2.class
+Reading: /com/nutscape/mc/nunuubot/modules/LastfmModule$3.class
+Reading: /com/nutscape/mc/nunuubot/modules/LastfmModule$4.class
+Modules: loaded HelloModule
+Modules: loaded LinkModule
+Modules: loaded UtilsModule
+LastfmModule: Loading user file lastfm_users.json
+Modules: loaded LastfmModule
+> USER NunuuBot 0 * :github.com/McNozes/NunuuBot
+> NICK NunuuBot
+> JOIN #McNozes
+> PRIVMSG McNozes!~McNozes@chico.diogo :py-ctcp: VERSION
+Debug:
+{
+    "result":{
+        "score":"0.88218593597412",
+        "artists":{"artist":[
+        {"name":"BADBADNOTGOOD","url":"http://www.last.fm/music/BADBADNOTGOOD","image":[{"#text":"http://userserve-ak.last.fm/serve/126/100926791.jpg","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/100926791.jpg","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/100926791.jpg","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/100926791.jpg","size":"extralarge"}]},
+        {"name":"Oneohtrix Point Never","url":"http://www.last.fm/music/Oneohtrix+Point+Never","image":[{"#text":"http://userserve-ak.last.fm/serve/126/105562271.jpg","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/105562271.jpg","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/105562271.jpg","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/105562271.jpg","size":"extralarge"}]},
+        {"name":"Aphex Twin","url":"http://www.last.fm/music/Aphex+Twin","image":[{"#text":"http://userserve-ak.last.fm/serve/126/57750673.jpg","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/57750673.jpg","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/57750673.jpg","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/57750673.jpg","size":"extralarge"}]},
+        {"name":"Gramatik","url":"http://www.last.fm/music/Gramatik","image":[{"#text":"http://userserve-ak.last.fm/serve/126/52948485.jpg","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/52948485.jpg","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/52948485.jpg","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/52948485.jpg","size":"extralarge"}]},
+        {"name":"Nujabes","url":"http://www.last.fm/music/Nujabes","image":[{"#text":"http://userserve-ak.last.fm/serve/126/93471819.png","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/93471819.png","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/93471819.png","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/93471819.png","size":"extralarge"}]}],
+        "@attr":{"matches":"10"}}
+        },
+
+"input":{"user":[
+{"name":"ttsda","url":"http://www.last.fm/user/ttsda","image":[{"#text":"http://userserve-ak.last.fm/serve/126/105791195.jpg","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/105791195.jpg","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/105791195.jpg","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/105791195.jpg","size":"extralarge"}]},
+{"name":"elitistamusical","url":"http://www.last.fm/user/elitistamusical","image":[{"#text":"http://userserve-ak.last.fm/serve/126/103506991.jpg","size":"large"},{"#text":"http://userserve-ak.last.fm/serve/64/103506991.jpg","size":"medium"},{"#text":"http://userserve-ak.last.fm/serve/34/103506991.jpg","size":"small"},{"#text":"http://userserve-ak.last.fm/serve/252/103506991.jpg","size":"extralarge"}]}
+]}
+}
+> PRIVMSG #McNozes :score = 0.88218593597412

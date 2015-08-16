@@ -10,13 +10,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-class ModuleInstantiationException extends Exception { 
-    ModuleInstantiationException(Exception e) { super(e); }
-}
-
 class StopExecutingException extends Exception { }
 
-public class NunuuBot implements BotInterface {
+class NunuuBot implements BotInterface {
 
     // SETTINGS
     // TODO: log file names here.
@@ -55,7 +51,7 @@ public class NunuuBot implements BotInterface {
         this.config = config;
         log(Level.FINER,config.toString());
 
-        this.irc = new IRC(connection);
+        this.irc = new IRC(connection,this);
 
         // Start modules specified in the config
         for (String m : config.initModules) {
@@ -135,45 +131,17 @@ public class NunuuBot implements BotInterface {
     }
 
     private void loadModule(String shortName)
-        throws ModuleInstantiationException
-    {
+        throws ModuleInstantiationException {
         // TODO: do a module name check 
 
         // Loading a loaded module is equivalent to reloading.
         if (modules.containsKey(shortName)) {
             unloadModule(shortName);
         }
-        
         String fullName = MODULES_PREFIX + "." + shortName;
-
-        try {
-            Class<?> cl;
-            if (config.useClassReloading) {
-                /* We must use a new ClassLoader each time, otherwise the
-                 * JVM just uses the already loaded class definition for
-                 * classes and doesn't take into account changes to class
-                 * files. */
-                ClassLoader parent = ModuleClassLoader.class.getClassLoader();
-                ModuleClassLoader loader = new ModuleClassLoader(parent);
-                cl = loader.loadClass(fullName);
-            } else {
-                log(Level.FINE,"Modules: loading statically");
-                cl = Class.forName(fullName);
-            }
-            Constructor<?> constr = cl.getConstructor(
-                        IRC.class,BotInterface.class);
-            Module h = (Module) constr.newInstance(irc,this);
-            this.modules.put(shortName,h);
-
-        } catch (InvocationTargetException e) { 
-            Throwable cause = e.getCause();
-            System.err.println("InvocationTargetException: " + cause);
-            throw new ModuleInstantiationException(e);
-        } catch (ClassNotFoundException  | NoSuchMethodException 
-                | InstantiationException | IllegalAccessException e) {
-            System.err.println("Error initializing " + shortName + ": " + e);
-            throw new ModuleInstantiationException(e);
-        }
+        Module m = ModuleFactory.newModule(shortName,fullName,
+                config.useClassReloading,irc,this);
+        modules.put(shortName,m);
         log(Level.INFO,"Modules: loaded " + shortName);
     }
 

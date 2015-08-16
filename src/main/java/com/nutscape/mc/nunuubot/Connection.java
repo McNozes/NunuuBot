@@ -79,7 +79,7 @@ class Connection {
             } catch (IOException e) {
                 bot.logThrowable(e);
             } catch (InterruptedException e) { }
-            bot.log(Level.FINER,"Exiting Connection thread");
+            bot.log(Level.FINER,"Finishing Connection thread");
         }
     }
 }

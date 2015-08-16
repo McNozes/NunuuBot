@@ -6,8 +6,6 @@ import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.BotInterface;
-import com.nutscape.mc.nunuubot.IRC;
-import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.BotInterface;
 import com.nutscape.mc.nunuubot.actions.Action;
