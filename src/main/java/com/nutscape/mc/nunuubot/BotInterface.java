@@ -7,6 +7,7 @@ public interface BotInterface {
     String getNickname();
     char getSpecialChar();
     String getCmdPrefix();
+    String getModuleDataDir();
     void log(Level level,String msg);
     void logThrowable(Throwable e);
 }

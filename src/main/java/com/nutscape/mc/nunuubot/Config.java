@@ -19,10 +19,10 @@ class Config {
     // User defined fields:
 
     String nickname = "NunuuBot";
-    String realname = "github.com/McNozes/NunuuBot";
+    String realname = "[github.com/McNozes/NunuuBot]";
     String mode = "0";
     String nickPassword = "";
-    String version = "github.com/McNozes/NunuuBot";
+    String exitMessage = "Time to die";
     String serverAddress = "irc.rizon.net";
     int serverPort = 6667;
     int hostPort = 50003;

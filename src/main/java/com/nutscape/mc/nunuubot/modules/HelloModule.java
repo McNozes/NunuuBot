@@ -4,14 +4,12 @@ import java.util.regex.Pattern;
 
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
-import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.BotInterface;
 import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.BotInterface;
 import com.nutscape.mc.nunuubot.actions.Action;
 import com.nutscape.mc.nunuubot.actions.CommandFactory;
 import com.nutscape.mc.nunuubot.actions.ActionContainer;
-
 
 public class HelloModule extends Module
 {

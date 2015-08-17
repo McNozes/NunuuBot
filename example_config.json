@@ -8,7 +8,7 @@
   "serverPort": 6667,
   "hostPort": 50003,
   "useClassReloading": true,
-  "specialChar": "\\",
+  "specialChar": ":",
   "logStdLevel": "FINE",
   "logFileLevel": "ALL",
   "logFileDir": ".",

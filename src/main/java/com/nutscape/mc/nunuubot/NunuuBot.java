@@ -2,7 +2,9 @@ package com.nutscape.mc.nunuubot;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -15,20 +17,19 @@ class NunuuBot implements BotInterface {
 
     // SETTINGS
     // TODO: log file names here.
-
     private static final String CONFIG_FILE = "config.json";
-
-    private static final String VERSION_NUMBER = "0.3";
-
-    // Must not end in '/':
+    private static final String DATA_DIR = "data";
     private static final String MODULES_DIR = "modules";
+    private static final String VERSION_NUMBER = "0.3";
+    private static final String VERSION_STRING =
+        "github.com/McNozes/NunuuBot " + VERSION_NUMBER;
 
     // ----------------------------------
 
     // Prefix for the full path to module classes:
     private static final String MODULES_PREFIX =
         NunuuBot.class.getCanonicalName().replaceAll("[.][^.]+$","") +
-        "." + MODULES_DIR.replaceAll("/",".");
+        "." + MODULES_DIR.replace("/+$","").replaceAll("/",".");
 
 
     // TODO: remove Connection from here
@@ -46,6 +47,11 @@ class NunuuBot implements BotInterface {
     private NunuuBot(Config config) throws Exception
     {
         log(Level.FINE,"************** STARTING **************");
+
+        Path configsDir = Paths.get(DATA_DIR);
+        if (!Files.isDirectory(configsDir)) {
+            Files.createDirectory(configsDir);
+        }
 
         this.config = config;
         log(Level.FINER,config.toString());
@@ -137,8 +143,8 @@ class NunuuBot implements BotInterface {
         if (modules.containsKey(shortName)) {
             unloadModule(shortName);
         }
-        String fullName = MODULES_PREFIX + "." + shortName;
-        Module m = Module.newModule(shortName,fullName,
+        String fullName = MODULES_PREFIX + "." + shortName + "Module";
+        Module m = Module.newModule(shortName+"Module",fullName,
                 config.useClassReloading,irc,this);
         modules.put(shortName,m);
         log(Level.INFO,"Modules: loaded " + shortName);
@@ -209,6 +215,10 @@ class NunuuBot implements BotInterface {
 
     public String getCmdPrefix() {
         return config.cmdPrefix;
+    }
+
+    public String getModuleDataDir() {
+        return DATA_DIR;
     }
 
     public void log(Level level,String msg) {
@@ -283,7 +293,7 @@ class NunuuBot implements BotInterface {
     private class Finisher implements Runnable {
         @Override public void run() {
             finishAllModules();
-            irc.quit("Goodbye");
+            irc.quit(config.exitMessage);
             connectionThread.interrupt();
             loggerThread.interrupt();
         }

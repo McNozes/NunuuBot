@@ -8,19 +8,19 @@
   "serverPort": 6667,
   "hostPort": 50003,
   "useClassReloading": true,
-  "specialChar": "\\",
-  "logStdLevel": "FINE",
+  "specialChar": ":",
+  "logStdLevel": "INFO",
   "logFileLevel": "ALL",
   "logFileDir": ".",
   "newLogFileAtSizeKB": 5120,
   "initModules": [
-    "HelloModule",
-    "LinkModule",
-    "UtilsModule"
+    "Hello",
+    "Link",
+    "Utils",
+    "Lastfm"
   ],
   "initChannels": [
-    "#McNozes",
-    "#bots"
+    "#McNozes"
   ],
   "admins": [
     "McNozes!~McNozes@chico.diogo"

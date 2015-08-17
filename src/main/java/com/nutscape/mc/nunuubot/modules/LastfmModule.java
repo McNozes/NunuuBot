@@ -1,38 +1,33 @@
 package com.nutscape.mc.nunuubot.modules;
 
-import java.net.URL;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ConnectException ;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.nutscape.mc.nunuubot.BotInterface;
+import com.nutscape.mc.nunuubot.IRC;
+import com.nutscape.mc.nunuubot.IncomingMessage;
+import com.nutscape.mc.nunuubot.Module;
+import com.nutscape.mc.nunuubot.actions.Action;
+import com.nutscape.mc.nunuubot.actions.ActionContainer;
+import com.nutscape.mc.nunuubot.actions.CommandFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.Writer;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.Path;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.NoSuchFileException;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.logging.Level;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.net.ConnectException ;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonArray;
 
-import com.nutscape.mc.nunuubot.IRC;
-import com.nutscape.mc.nunuubot.IncomingMessage;
-import com.nutscape.mc.nunuubot.Module;
-import com.nutscape.mc.nunuubot.BotInterface;
-import com.nutscape.mc.nunuubot.actions.Action;
-import com.nutscape.mc.nunuubot.actions.CommandFactory;
-import com.nutscape.mc.nunuubot.actions.ActionContainer;
+
 
 /* 
  * From LastFM's API documentation, on conversion from XML to JSON:
@@ -49,31 +44,30 @@ import com.nutscape.mc.nunuubot.actions.ActionContainer;
 public class LastfmModule extends Module
 {
     private final String API_URL = "http://ws.audioscrobbler.com/2.0/";
-    private final String SAVE_FILE = "lastfm.json";
+    private final String SAVE_FILE = "data/Lastfm.json";
 
-    private String API_KEY;
-    private String API_SECRET;
-    private Map<String,String> userMap = 
-        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private String API_KEY = null;
+    private String API_SECRET = null;
+    private Map<String,String> userMap;
+    private final ActionContainer commands;
     private int newUsers = 0;
-    private static final int SAVE_USERS_INTERVAL = 3;
-
-    private final ActionContainer commands = new ActionContainer();
+    private static final int SAVE_USERS_INTERVAL = 10;
 
     public LastfmModule(IRC irc,BotInterface bot) 
-        throws ModuleInstantiationException {
+        throws ModuleInstantiationException
+    {
         super(irc,bot);
-
-        // Module really needs to file to work
         try {
             loadSaveFile();
         } catch (Exception e) {
+            // If an Exception was not caught, the module does not everything
+            // it needs to work.
             throw new ModuleInstantiationException(e);
         }
 
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
         fac.setIRC(irc);
-
+        commands = new ActionContainer();
         String pf = "((lf)|(lfm)|(fm))";
         String mapString = bot.getSpecialChar() + "lfmset";
         commands.add(fac.newMappedCommand(pf+"count",
@@ -262,7 +256,7 @@ public class LastfmModule extends Module
                 }
                 return m + "m " + s + "s ago";
             }
-            return h + "h " + m + "m " + " ago";
+            return h + "h " + m + "m ago";
         }
     };
 
@@ -325,61 +319,32 @@ public class LastfmModule extends Module
     };
 
     private void loadSaveFile() throws Exception {
-
-        Path saveFile = Paths.get(SAVE_FILE);
-        if (Files.notExists(saveFile)) {
-            throw new Exception("No savefile was found");
-        }
-        bot.log(Level.INFO,"LastfmModule: Loading file " + SAVE_FILE);
-
-        Gson gson = new GsonBuilder()
-            .setPrettyPrinting()
-            .serializeNulls()
-            .create();
-
         try {
-            Reader in = Files.newBufferedReader(saveFile);
-            JsonObject saveObj = gson.fromJson(in,JsonObject.class);
-            if (saveObj.has("API_KEY")) {
-                this.API_KEY = getString(saveObj,"API_KEY");
-            } else {
+            ModuleData save = new ModuleData(LastfmModule.class);
+            this.API_KEY = save.fromJson("API_KEY",String.class);
+            if (API_KEY == null) {
                 throw new Exception("Savefile is missing API key.");
             }
-            if (saveObj.has("API_SECRET")) {
-                this.API_SECRET = getString(saveObj,"API_SECRET");
-            }
-            if (saveObj.has("userMap")) {
-                JsonElement mapEl = saveObj.get("userMap");
-                this.userMap = gson.fromJson(mapEl,userMap.getClass());
+            this.API_SECRET = save.fromJson("API_SECRET",String.class);
+            this.userMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            if (save.has("userMap")) {
+                this.userMap = save.fromJson("userMap",userMap.getClass());
             } else {
                 bot.log(Level.WARNING,"No user map was found in file");
             }
-        } catch (IOException e) {
-            bot.logThrowable(e);
-        } 
-    }
-
-    private void writeSaveFile() {
-        Path saveFile = Paths.get(SAVE_FILE);
-
-        bot.log(Level.INFO,"LastfmModule: Saving user file " + SAVE_FILE);
-
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        JsonObject save = new JsonObject();
-        save.addProperty("API_KEY",API_KEY);
-        save.addProperty("API_SECRET",API_KEY);
-        save.add("userMap",gson.toJsonTree(userMap));
-        String jsonString = save.toString();
-
-        try (Writer out = Files.newBufferedWriter(Paths.get(SAVE_FILE))) {
-            for (int i=0; i < jsonString.length(); i++) {
-                out.write(jsonString.codePointAt(i));
-            }
-            if (out != null)
-                out.close();
+        } catch (NoSuchFileException e) {
+            throw e;
         } catch (IOException e) {
             bot.logThrowable(e);
         }
+    }
+
+    private void writeSaveFile() {
+        ModuleData save = new ModuleData();
+        save.addProperty("API_KEY",API_KEY);
+        save.addProperty("API_SECRET",API_SECRET);
+        save.add("userMap",userMap);
+        save.writeToFile(LastfmModule.class);
     }
 
     @Override

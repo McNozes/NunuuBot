@@ -1,3 +1,8 @@
+task ctags(type:Exec) {
+    commandLine 'ctags'
+    args '-R'
+}
+
 apply plugin: 'application'
 
 // Apply the java plugin to add support for Java
