@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.Date;
+import java.util.TimeZone;
+import java.text.SimpleDateFormat;
 import java.net.ConnectException ;
-
-
-
 
 /* 
  * From LastFM's API documentation, on conversion from XML to JSON:
@@ -58,10 +58,10 @@ public class LastfmModule extends Module
     {
         super(irc,bot);
         try {
+            /* We use an Exception to signal that the module does not have
+             * everything it needs to work. */
             loadSaveFile();
         } catch (Exception e) {
-            // If an Exception was not caught, the module does not everything
-            // it needs to work.
             throw new ModuleInstantiationException(e);
         }
 
@@ -98,17 +98,31 @@ public class LastfmModule extends Module
                 JsonObject userObject = resp.get("user").getAsJsonObject();
                 String user = userObject.get("name").getAsString();
                 String count = userObject.get("playcount").getAsString();
-                String registered = userObject.get("registered").getAsJsonObject()
-                    .get("#text").getAsString()
-                    .replaceAll(" \\d\\d:\\d\\d$",".");
+                //String registered = userObject.get("registered").getAsJsonObject()
+                //    .get("#text").getAsString()
+                //    .replaceAll(" \\d\\d:\\d\\d$","."); // API screw up
+                String timeString = userObject.get("registered")
+                    .getAsJsonObject()
+                    .get("unixtime").getAsString();
+                String formattedDate = unixtimeToDateString(timeString);
+
                 irc.sendPrivMessage(m.getDestination(),
-                        user + ": " + count + " tracks played since " + registered);
+                        nick + ": " + count + " tracks played since " 
+                        + formattedDate);
             } catch (IOException e) {
                 bot.logThrowable(e);
             }
             return true;
         }
     };
+
+    private String unixtimeToDateString(String timeString) {
+        long uts = Long.valueOf(timeString) * 1000L;
+        Date date = new Date(uts);
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        df.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return df.format(date);
+    }
 
     /* Show a comparison between two users. */
     private Action compareAction = new Action() {
@@ -195,7 +209,9 @@ public class LastfmModule extends Module
                     msg.append(" played ");
                     msg.append(getTrackString(track));
                     msg.append(" ");
-                    msg.append(getTimeString(track));
+                    long uts = 
+                        Long.valueOf(getString(getObject(track,"date"),"uts"));
+                    msg.append(getTimeString(uts));
                 } else {
                     // LastFM returns an array with two tracks when the track
                     // is currently playing.
@@ -232,10 +248,8 @@ public class LastfmModule extends Module
             return builder.toString();
         }
 
-        private String getTimeString(JsonObject track) {
+        private String getTimeString(long uts) {
             // uts - seconds since Jan 01 1970 UTC
-            long uts = 
-                Long.valueOf(getString(getObject(track,"date"),"uts"));
             long now = System.currentTimeMillis() / 1000L;
             long seconds = (now - uts);
             int days = (int) TimeUnit.SECONDS.toDays(seconds);
