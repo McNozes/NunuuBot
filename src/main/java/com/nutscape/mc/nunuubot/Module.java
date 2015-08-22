@@ -18,34 +18,54 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonElement;
+import com.nutscape.mc.nunuubot.actions.Action;
+import com.nutscape.mc.nunuubot.actions.ActionContainer;
 
 /** 
  * Abstract class for bots.
  * TODO: make assynchronous.
  */
 public abstract class Module {
+    private ActionContainer commands = null;
+    private ActionContainer notices = null;
+
     protected BotInterface bot;
     protected IRC irc;    // Output interface.
 
-    public Module(IRC irc,BotInterface bot) throws ModuleInstantiationException
+    protected Module(IRC irc,BotInterface bot)
+        throws ModuleInstantiationException
     {
         this.bot = bot;
         this.irc = irc;
+        this.commands = new ActionContainer();
+        this.notices = new ActionContainer();
     }
 
     // ------------------
 
+    // Clients may override this (they can still call the 'superclass' version)
+    public void privMsg(IncomingMessage msg) {
+        commands.acceptAndReturnAtMatch(msg);
+    }
+    public void notice(IncomingMessage msg) {
+        notices.acceptAndReturnAtMatch(msg);
+    }
+
+    // Clients may implement this:
     public void finish() {
         // Do nothing
     }
 
-    public abstract void privMsg(IncomingMessage msg);
-
-    protected boolean match(Pattern p,String s) {
-        return p.matcher(s).matches();
+    protected void addCommand(Action action) {
+        commands.add(action);
+    }
+    protected void addNotice(Action action) {
+        notices.add(action);
     }
 
     // ------------------
+
+    // TODO: move to another class
 
     /*
      * Module serialization / deserialization

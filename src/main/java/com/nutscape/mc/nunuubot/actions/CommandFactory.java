@@ -28,6 +28,10 @@ public class CommandFactory {
 
     // --------------
 
+    public Action newActionPattern(Pattern pattern,Action action) {
+        return new PatternAction(pattern,action);
+    }
+
     public Action newCommand(String cmd,Action action,int nargs,
             boolean usesOptionalTarget) {
         Pattern pattern = buildCmdPattern(cmd);
@@ -126,7 +130,8 @@ class CheckArgsAction extends Action {
     @Override
     public boolean accept(IncomingMessage m,String... args) {
         if (args.length != nargs) {
-            throw new IllegalArgumentException("Wrong number of arguments in action");
+            throw new IllegalArgumentException(
+                    "Wrong number of arguments in action");
         } 
         return nextAction.accept(m,args);
     }

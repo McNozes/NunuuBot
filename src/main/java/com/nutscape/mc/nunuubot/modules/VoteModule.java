@@ -7,13 +7,8 @@ import com.nutscape.mc.nunuubot.BotInterface;
 
 public class VoteModule extends Module
 {
-    public VoteModule(IRC irc,BotInterface bot) 
-        throws ModuleInstantiationException{
+    public VoteModule(IRC irc,BotInterface bot)
+        throws ModuleInstantiationException {
         super(irc,bot);
-    }
-
-    @Override
-    public void privMsg(IncomingMessage m) {
-        // TODO
     }
 }

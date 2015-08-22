@@ -27,8 +27,8 @@ class MapGetAction extends Action {
             key.substring(1) : map.get(key);
         if (value == null) {               // not found
             irc.sendPrivMessage(m.getDestination(), 
-                    key + ": not found. Send me a pvt with " +
-                    mapCommandString + " <username>");
+                    key + ": not found. Send me a pvt with " + mapCommandString
+                    + " <username>");
             return true;
         }
         // Add the value to the end of argument list
@@ -54,7 +54,7 @@ class MapPutAction extends Action {
     public boolean accept(IncomingMessage m,String... args) {
         String username = args[0];
         map.put(m.getNick(),username);
-        irc.sendPrivMessage(m.getNick(),"User " + username + " set");
+        irc.sendNotice(m.getNick(),"User " + username + " set.");
         return nextAction.accept(m,username);
     }
 }

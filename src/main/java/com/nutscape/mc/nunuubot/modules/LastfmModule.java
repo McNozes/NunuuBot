@@ -49,7 +49,6 @@ public class LastfmModule extends Module
     private String API_KEY = null;
     private String API_SECRET = null;
     private Map<String,String> userMap;
-    private final ActionContainer commands;
     private int newUsers = 0;
     private static final int SAVE_USERS_INTERVAL = 10;
 
@@ -67,17 +66,16 @@ public class LastfmModule extends Module
 
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
         fac.setIRC(irc);
-        commands = new ActionContainer();
         String pf = "((lf)|(lfm)|(fm))";
         String mapString = bot.getSpecialChar() + "lfmset";
-        commands.add(fac.newMappedCommand(pf+"count",
-                    userMap,mapString,playCountAction));
-        commands.add(fac.newMappedCommand(pf+"?np",
+        addCommand((fac.newMappedCommand(pf+"count",
+                    userMap,mapString,playCountAction)));
+        addCommand(fac.newMappedCommand(pf+"?np",
                     userMap,mapString,new NowPlayingAction(false)));
-        commands.add(fac.newMappedCommand(pf+"?npalbum",
+        addCommand(fac.newMappedCommand(pf+"?npalbum",
                     userMap,mapString,new NowPlayingAction(true)));
-        commands.add(fac.newMapPutCommand(pf+"set",userMap,saveMap));
-        commands.add(fac.newDoubleMappedCommand(pf+"?compare",
+        addCommand(fac.newMapPutCommand(pf+"set",userMap,saveMap));
+        addCommand(fac.newDoubleMappedCommand(pf+"?compare",
                     userMap,mapString,compareAction));
     }
     // -----------
@@ -359,11 +357,6 @@ public class LastfmModule extends Module
         save.addProperty("API_SECRET",API_SECRET);
         save.add("userMap",userMap);
         save.writeToFile(LastfmModule.class);
-    }
-
-    @Override
-    public void privMsg(IncomingMessage m) {
-        commands.acceptAndReturnAtMatch(m);
     }
 
     @Override

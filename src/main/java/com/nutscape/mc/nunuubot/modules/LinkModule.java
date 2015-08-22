@@ -21,9 +21,4 @@ public class LinkModule extends Module
 
     private static final Pattern snapPattern  = Pattern.compile(
                 "\\s*(New snap:)?\\s*(https?://)?(www.)?european\\.shitposting\\.agency/snaps/.*");
-
-    @Override
-    public void privMsg(IncomingMessage m) {
-        // TODO
-    }
 }

@@ -14,12 +14,9 @@ import com.nutscape.mc.nunuubot.actions.CommandFactory;
 
 public class UtilsModule extends Module implements NoticeReceiver
 {
-    private final ActionContainer commands = new ActionContainer();
-    private final ActionContainer replies =  new ActionContainer();
-
     private void addPair(Action pair) {
-        commands.add(pair);
-        replies.add(pair);
+        addCommand(pair);
+        addNotice(pair);
     }
 
     public UtilsModule(IRC irc,BotInterface bot) 
@@ -105,18 +102,9 @@ public class UtilsModule extends Module implements NoticeReceiver
             }
         };
         addPair(fac.newUserCommand("whois",sendWhois));
-    }
-
-    // ---------
-
-    @Override
-    public void privMsg(IncomingMessage m) {
-        commands.acceptAndReturnAtMatch(m);
-    }
-
-    @Override
-    public void notice(IncomingMessage m) {
-        replies.acceptAndReturnAtMatch(m);
+        // DEBUG_BEGIN
+        System.out.println("Debug:");
+        // DEBUG_END
     }
 }
 

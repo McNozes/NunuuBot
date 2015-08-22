@@ -13,45 +13,36 @@ import com.nutscape.mc.nunuubot.actions.ActionContainer;
 
 public class HelloModule extends Module
 {
-    private final ActionContainer commands = new ActionContainer();
-
     public HelloModule(IRC irc,BotInterface bot) 
         throws ModuleInstantiationException {
         super(irc,bot);
 
+        Action olaAction = new Action() {
+            @Override
+            public boolean accept(IncomingMessage m,String... args) {
+                irc.sendPrivMessage(
+                        m.getDestination(),"Olái, " + m.getNick()+"!");
+                return true;
+            }
+        };
+
+        Action helloAction = new Action() {
+            @Override
+            public boolean accept(IncomingMessage m,String... args) {
+                irc.sendPrivMessage(
+                        m.getDestination(),"Hello, " + m.getNick() + "!");
+                return true;
+            }
+        };
+
+        String hps = " *hello[ ,]* +" + bot.getNickname() + "[!.]*";
+        String ops = " *[oO][lL][aáAÁ][ ,]* +" + bot.getNickname() + "[!.]*";
+
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
         fac.setIRC(irc);
-        commands.add(fac.newCommand("ol[aá]",olaAction));
-    }
-
-    private final Pattern helloPattern =
-        Pattern.compile(" *hello[ ,]* +" + bot.getNickname() +
-                "[!.]*",Pattern.CASE_INSENSITIVE);
-
-    private final Pattern olaPattern =
-        Pattern.compile(" *[oO][lL][aáAÁ][ ,]* +" + bot.getNickname() +
-                "[!.]*",Pattern.CASE_INSENSITIVE);
-
-    private Action olaAction = new Action() {
-        @Override
-        public boolean accept(IncomingMessage m,String... args) {
-            irc.sendPrivMessage(m.getDestination(),"Olá, " + m.getNick()+"!");
-            return true;
-        }
-    };
-
-    @Override
-    public void privMsg(IncomingMessage m) {
-        String dest = m.getDestination();
-        String nick = m.getNick();
-        String msg = m.getContent();
-
-        if (helloPattern.matcher(msg).matches()) {
-            irc.sendPrivMessage(dest,"Hello, " + nick + "!");
-        } else if (olaPattern.matcher(msg).matches()) {
-            irc.sendPrivMessage(dest,"Olá, " + nick + "!");
-        }
-
-        commands.acceptAndReturnAtMatch(m);
+        addCommand(fac.newActionPattern(
+                    Pattern.compile(hps,Pattern.CASE_INSENSITIVE),olaAction));
+        addCommand(fac.newActionPattern(
+                    Pattern.compile(ops,Pattern.CASE_INSENSITIVE),helloAction));
     }
 }
