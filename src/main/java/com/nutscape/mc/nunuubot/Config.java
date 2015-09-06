@@ -2,9 +2,11 @@ package com.nutscape.mc.nunuubot;
 
 import java.io.*;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Arrays;
+import java.util.ArrayList;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,13 +32,15 @@ class Config {
     char specialChar = ':';
     String logStdLevel = "FINE";
     String logFileLevel = "ALL";
-    String logFileDir = ".";
+    String logFileDir = null;
     int newLogFileAtSizeKB = 5*1024;
+    String botsDirname = System.getProperty("user.home") + "/.config/nunuubot";
+    String dataDir = botsDirname + "/nunuubot";
 
     List<String> initModules = Arrays.asList(new String[] {
         "HelloModule",
-            "LinkModule",
-            "UtilsModule"
+        "LinkModule",
+        "UtilsModule"
     });
 
     List<String> initChannels = Arrays.asList(new String[] {
@@ -47,18 +51,38 @@ class Config {
         "McNozes!~McNozes@chico.diogo"
     });
 
-    // Other fields
+    String cmdPrefix = "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
 
-    String cmdPrefix;
+    // --------------------------------------
 
-    private void init() {
-        this.cmdPrefix =  
-            "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
+    /* Define a regex expresion that matches the prefix of a command */
+    private void setCmdPrefix() {
+        this.cmdPrefix = "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
         if (specialChar == '\'') {
             throw new IllegalArgumentException(
                     "Cannot use that as special character.");
         }
     }
+
+    /* Set the directory to which data files are written.
+     * Currently, it will use the filename (without extension) as the
+     * subdirectory of either the directory specified in the config file or
+     * ~/config/nunuubot.
+     * */
+    private void setDatadir(String configFilename) {
+        Path path = Paths.get(configFilename);
+        String n = path.getFileName().toString();
+        String botId = n.substring(0,n.lastIndexOf('.'));
+        this.dataDir = botsDirname + "/" + botId;
+    }
+
+    private void setLogFileDir() {
+        if (this.logFileDir == null) {
+            this.logFileDir = this.dataDir;
+        }
+    }
+
+    // JSON
 
     static private ExclusionStrategy exclusion = new ExclusionStrategy()
     {
@@ -77,7 +101,7 @@ class Config {
         }
     };
 
-    void write(String file) throws IOException
+    void writeJSON(String file) throws IOException
     {
         String s = toString();
         Writer out = Files.newBufferedWriter(Paths.get(file));
@@ -88,7 +112,7 @@ class Config {
             out.close();
     }
 
-    static Config read(String file) throws IOException
+    static Config readJSON(String file) throws IOException
     {
         Gson gson = new GsonBuilder()
             .serializeNulls()
@@ -99,7 +123,10 @@ class Config {
         Config config = gson.fromJson(in,Config.class);
         if (in != null)
             in.close();
-        config.init();
+
+        config.setCmdPrefix();
+        config.setDatadir(file);
+        config.setLogFileDir();
         return config;
     }
 

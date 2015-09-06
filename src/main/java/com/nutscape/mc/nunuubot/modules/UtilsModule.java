@@ -6,7 +6,7 @@ import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IRC.CTCP;
 import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
-import com.nutscape.mc.nunuubot.BotInterface;
+import com.nutscape.mc.nunuubot.Bot;
 import com.nutscape.mc.nunuubot.NoticeReceiver;
 import com.nutscape.mc.nunuubot.actions.Action;
 import com.nutscape.mc.nunuubot.actions.ActionContainer;
@@ -19,9 +19,9 @@ public class UtilsModule extends Module implements NoticeReceiver
         addNotice(pair);
     }
 
-    public UtilsModule(IRC irc,BotInterface bot) 
+    public UtilsModule(Bot bot) 
         throws ModuleInstantiationException {
-        super(irc,bot);
+        super(bot);
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
 
         // Add CTCP queries
@@ -37,7 +37,7 @@ public class UtilsModule extends Module implements NoticeReceiver
             Action cAct = new Action() {
                 @Override
                 public boolean accept(IncomingMessage m,String... args) {
-                    irc.query(query,args[0]);
+                    bot.getIRC().query(query,args[0]);
                     return true;
                 }
             };
@@ -45,7 +45,8 @@ public class UtilsModule extends Module implements NoticeReceiver
                 @Override
                 public boolean accept(IncomingMessage m,String... args) {
                     String arg = query.getArgs(m.getContent());
-                    irc.sendPrivMessage(args[0],m.getNick() + ": " + arg);
+                    bot.getIRC().sendPrivMessage(
+                            args[0],m.getNick() + ": " + arg);
                     return true;
                 }
             };
@@ -58,7 +59,7 @@ public class UtilsModule extends Module implements NoticeReceiver
             @Override
             public boolean accept(IncomingMessage m,String... args) {
                 Long timestamp = System.currentTimeMillis();
-                irc.query(CTCP.PING,args[0],timestamp.toString());
+                bot.getIRC().query(CTCP.PING,args[0],timestamp.toString());
                 return true;
             }
         };
@@ -70,7 +71,8 @@ public class UtilsModule extends Module implements NoticeReceiver
                 String arg = CTCP.PING.getArgs(m.getContent());
                 Long sentTime = Long.valueOf(arg);
                 Long delta = m.getTimestamp() - sentTime;
-                irc.sendPrivMessage(args[0],m.getNick() + ": " + delta + "ms");
+                bot.getIRC().sendPrivMessage(
+                        args[0],m.getNick() + ": " + delta + "ms");
                 return true;
             }
         };
@@ -85,7 +87,8 @@ public class UtilsModule extends Module implements NoticeReceiver
         Action hostReply = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
-                irc.sendPrivMessage(args[0],m.getNick() + ": " + m.getHost());
+                bot.getIRC().sendPrivMessage(
+                        args[0],m.getNick() + ": " + m.getHost());
                 return true;
             }
         };
@@ -97,14 +100,11 @@ public class UtilsModule extends Module implements NoticeReceiver
         Action sendWhois = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
-                irc.whois(args[0]);
+                bot.getIRC().whois(args[0]);
                 return true;
             }
         };
         addPair(fac.newUserCommand("whois",sendWhois));
-        // DEBUG_BEGIN
-        System.out.println("Debug:");
-        // DEBUG_END
     }
 }
 

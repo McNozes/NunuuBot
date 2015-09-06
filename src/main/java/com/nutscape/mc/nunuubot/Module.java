@@ -26,19 +26,13 @@ import com.nutscape.mc.nunuubot.actions.ActionContainer;
  * TODO: make assynchronous.
  */
 public abstract class Module {
-    private ActionContainer commands = null;
-    private ActionContainer notices = null;
+    private final ActionContainer commands = new ActionContainer();
+    private final ActionContainer notices = new ActionContainer();
 
-    protected BotInterface bot;
-    protected IRC irc;    // Output interface.
+    protected Bot bot;
 
-    protected Module(IRC irc,BotInterface bot)
-        throws ModuleInstantiationException
-    {
+    protected Module(Bot bot) throws ModuleInstantiationException {
         this.bot = bot;
-        this.irc = irc;
-        this.commands = new ActionContainer();
-        this.notices = new ActionContainer();
     }
 
     // ------------------
@@ -51,7 +45,7 @@ public abstract class Module {
         notices.acceptAndReturnAtMatch(msg);
     }
 
-    // Clients may implement this:
+    // Clients may override this
     public void finish() {
         // Do nothing
     }
@@ -68,7 +62,7 @@ public abstract class Module {
     // TODO: move to another class
 
     /*
-     * Module serialization / deserialization
+     * Module data serialization / deserialization
      */
 
     protected class ModuleData {
@@ -86,8 +80,8 @@ public abstract class Module {
         Path getSaveFilePath(Class<?> clazz) {
             String className = clazz.getSimpleName();
             String filename = className.replaceAll("Module$","") + ".json";
-            String dirname = Module.this.bot.getModuleDataDir();
-            return Paths.get(dirname + "/" + filename);
+            Path dir = Paths.get(Module.this.bot.getDataDir());
+            return dir.resolve(filename);
         }
 
         /* Read json file containing Module data. */
@@ -149,8 +143,7 @@ public abstract class Module {
             String shortName,
             String fullName,
             boolean useClassReloading,
-            IRC irc,
-            BotInterface bot) throws Module.ModuleInstantiationException
+            Bot bot) throws Module.ModuleInstantiationException
     {
         try {
             Class<?> cl;
@@ -161,14 +154,13 @@ public abstract class Module {
                  * files. */
                 ClassLoader parent = ModuleClassLoader.class.getClassLoader();
                 ModuleClassLoader loader = new ModuleClassLoader(parent);
-                loader.setBotInterface(bot);
+                loader.setBot(bot);
                 cl = loader.loadClass(fullName);
             } else {
                 cl = Class.forName(fullName);
             }
-            Constructor<?> constr = cl.getConstructor(
-                    IRC.class,BotInterface.class);
-            return (Module) constr.newInstance(irc,bot);
+            Constructor<?> constr = cl.getConstructor(Bot.class);
+            return (Module) constr.newInstance(bot);
 
         } catch (InvocationTargetException e) { 
             Throwable cause = e.getCause();
@@ -184,13 +176,13 @@ public abstract class Module {
     /* Note: Classes loaded from different classloaders are put in different
      * packages. */
     static class ModuleClassLoader extends ClassLoader {
-        protected BotInterface bot;
+        protected Bot bot;
 
         ModuleClassLoader(ClassLoader parent) {
             super(parent);
         }
 
-        void setBotInterface(BotInterface bot) {
+        void setBot(Bot bot) {
             this.bot = bot;
         }
 

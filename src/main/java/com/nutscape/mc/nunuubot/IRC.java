@@ -13,9 +13,9 @@ import java.util.regex.Pattern;
 public class IRC
 {
     private Connection connection;
-    private BotInterface bot;
+    private Bot bot;
 
-    public IRC(Connection connection,BotInterface bot) {
+    public IRC(Connection connection,Bot bot) {
         this.connection = connection;
     }
 

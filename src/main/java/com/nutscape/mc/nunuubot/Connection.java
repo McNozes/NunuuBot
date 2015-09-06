@@ -14,15 +14,15 @@ import java.util.logging.Level;
  */
 class Connection {
     private Writer out;
-    private BotInterface bot;
+    private Bot bot;
 
-    Connection(BotInterface bot) {
+    Connection(Bot bot) {
         this.bot = bot;
     }
 
     // ------------
 
-    public Thread start(
+    Thread start(
             String serverAddress,
             int serverPort,
             int hostPort,
@@ -39,7 +39,7 @@ class Connection {
         return thread;
     }
 
-    public void send(String cmd) throws IOException
+    void send(String cmd) throws IOException
     {
         bot.log(Level.INFO,"> " +  cmd);
         out.write(cmd);
@@ -53,11 +53,10 @@ class Connection {
     static class MessageFetcher implements Runnable {
         private BufferedReader in;
         private BlockingQueue<String> queue;
-        private BotInterface bot;
+        private Bot bot;
         private boolean stop = false;
 
-        MessageFetcher(InputStream in,BlockingQueue<String> queue,
-                BotInterface bot)
+        MessageFetcher(InputStream in,BlockingQueue<String> queue,Bot bot)
             throws IOException
         {
             this.in = new BufferedReader(new InputStreamReader(in));

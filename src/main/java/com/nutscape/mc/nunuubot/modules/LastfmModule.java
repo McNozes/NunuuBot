@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.nutscape.mc.nunuubot.BotInterface;
+import com.nutscape.mc.nunuubot.Bot;
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
 import com.nutscape.mc.nunuubot.Module;
@@ -44,18 +44,17 @@ import java.net.ConnectException ;
 public class LastfmModule extends Module
 {
     private final String API_URL = "http://ws.audioscrobbler.com/2.0/";
-    private final String SAVE_FILE = "data/Lastfm.json";
-
     private String API_KEY = null;
     private String API_SECRET = null;
+
     private Map<String,String> userMap;
     private int newUsers = 0;
     private static final int SAVE_USERS_INTERVAL = 10;
 
-    public LastfmModule(IRC irc,BotInterface bot) 
+    public LastfmModule(Bot bot) 
         throws ModuleInstantiationException
     {
-        super(irc,bot);
+        super(bot);
         try {
             /* We use an Exception to signal that the module does not have
              * everything it needs to work. */
@@ -65,7 +64,7 @@ public class LastfmModule extends Module
         }
 
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
-        fac.setIRC(irc);
+        fac.setIRC(bot.getIRC());
         String pf = "((lf)|(lfm)|(fm))";
         String mapString = bot.getSpecialChar() + "lfmset";
         addCommand((fac.newMappedCommand(pf+"count",
@@ -104,7 +103,7 @@ public class LastfmModule extends Module
                     .get("unixtime").getAsString();
                 String formattedDate = unixtimeToDateString(timeString);
 
-                irc.sendPrivMessage(m.getDestination(),
+                bot.getIRC().sendPrivMessage(m.getDestination(),
                         nick + ": " + count + " tracks played since " 
                         + formattedDate);
             } catch (IOException e) {
@@ -169,7 +168,8 @@ public class LastfmModule extends Module
                 }
                 msg.setLength(msg.length()-2);
 
-                irc.sendPrivMessage(m.getDestination(),msg.toString());
+                bot.getIRC().sendPrivMessage(
+                        m.getDestination(),msg.toString());
             } catch (IOException e) {
                 bot.logThrowable(e);
             }
@@ -217,12 +217,13 @@ public class LastfmModule extends Module
                     // It's the second element
                     JsonObject track = array.get(0).getAsJsonObject();
                     msg.append(nick);
-                    msg.append(" is now playing ");
+                    msg.append(": ");
                     msg.append(getTrackString(track));
                 }
 
                 //bot.log(Level.INFO,track.toString());
-                irc.sendPrivMessage(m.getDestination(),msg.toString());
+                bot.getIRC().sendPrivMessage(
+                        m.getDestination(),msg.toString());
 
             } catch (IOException e) {
                 bot.logThrowable(e);
@@ -285,7 +286,8 @@ public class LastfmModule extends Module
         String message = o.get("message").getAsString();;
         bot.log(Level.WARNING,"last.fm: "+ error + ": " + message);
         if (error.equals("7")) {
-            irc.sendPrivMessage(m.getDestination(),"Invalid request.");
+            bot.getIRC()
+                .sendPrivMessage(m.getDestination(),"Invalid request.");
         }
     }
 

@@ -12,51 +12,109 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-class NunuuBot implements BotInterface {
+/**
+ * Main program class.
+ * Exposes (non-static) services such as logging and IRC publicly.
+ *
+ * - Bot asks for config file (or uses the default one 
+ *     ~/.config/nunuubot/nunuubot.json).
+ * - BotID := name of config file minus the extension
+ * - BotDir will be in the config file
+ *   (otherwise, BotDir := ~/.config/nunuubot)
+ * - All output data will go into BotDir/BotID/ 
+ *   (this assumes that there is no file named BotID in BotDir)
+ * - Module configuration is 
+ *
+ * @author(McNozes)
+ */
+public class Bot {
     class StopExecutingException extends Exception { }
 
-    // SETTINGS
-    // TODO: log file names here.
-    private static final String CONFIG_FILE = "config.json";
-    private static final String DATA_DIR = "data";
-    private static final String MODULES_DIR = "modules";
-    private static final String VERSION_NUMBER = "0.3";
-    private static final String VERSION_STRING =
-        "github.com/McNozes/NunuuBot " + VERSION_NUMBER;
+    /*
+     * Settings
+     */
+    private static final String VERSION_NUMBER = "0.4";
+    private static final String SOURCE_STRING = "github.com/McNozes/NunuuBot";
+    private String VERSION_STRING = SOURCE_STRING + " " + VERSION_NUMBER;
+
+    private static String configFilename = "~/.config/nunuubot/nunuubot.json";
+    static {
+        // Replace home
+        configFilename = configFilename.replaceAll("^~/",
+                System.getProperty("user.home") + "/");
+    }
+
+    // Prefix for the full path to module classes:
+    // TODO: use Path
+    private static final String MODULES_DIRNAME = "modules";
+    private static final String MODULES_PREFIX =
+        Bot.class.getCanonicalName().replaceAll("[.][^.]+$","") +
+        "." + MODULES_DIRNAME.replace("/+$","").replaceAll("/",".");
 
     // ----------------------------------
 
-    // Prefix for the full path to module classes:
-    private static final String MODULES_PREFIX =
-        NunuuBot.class.getCanonicalName().replaceAll("[.][^.]+$","") +
-        "." + MODULES_DIR.replace("/+$","").replaceAll("/",".");
+    /*
+     * Bot Interface
+     */
 
+    public String getNickname() {
+        return config.nickname; }
+
+    public char getSpecialChar() {
+        return config.specialChar; }
+
+    public String getCmdPrefix() {
+        return config.cmdPrefix; }
+
+    public String getDataDir() {
+        return config.dataDir; }
+
+    public IRC getIRC() {
+        return irc; }
+
+    public void log(Level level,String msg) {
+        try {
+            logQueue.put(new LogRecord(level,msg));
+        } catch (InterruptedException e) {
+            System.err.println("Error writing to log");
+        }
+    }
+
+    public void logThrowable(Throwable e) {
+        log(Level.SEVERE,e.getClass().getSimpleName() + ": " 
+                + e.getMessage());
+        for (StackTraceElement s : e.getStackTrace()) {
+            log(Level.FINE,s.toString());
+        }
+    }
+
+    // ----------------------------------
 
     // TODO: remove Connection from here
     // TODO: use java's Observer and Observable
     private Config config;
-    private final Connection connection = new Connection(this);
+    private final Connection connection;
     private final IRC irc;
     private final Map<String,Module> modules = new HashMap();
-    private final BlockingQueue<LogRecord> logQueue
-        = new LinkedBlockingQueue<>();
+    private final BlockingQueue<LogRecord> logQueue;
     private Thread loggerThread;
     private Thread connectionThread;
 
-    /* Constructor halts if a single module fails to initialize.  */
-    private NunuuBot(Config config) throws Exception
+    /* This constructor will halt if a single module fails to initialize. */
+    private Bot(Config config) throws Exception
     {
-        log(Level.FINE,"************** STARTING **************");
+        this.logQueue = new LinkedBlockingQueue<>();
+        log(Level.FINE,"************** START OF LOG **************");
 
-        Path configsDir = Paths.get(DATA_DIR);
-        if (!Files.isDirectory(configsDir)) {
-            Files.createDirectory(configsDir);
-        }
+        this.connection = new Connection(this);
+        this.irc = new IRC(connection,this);
 
         this.config = config;
         log(Level.FINER,config.toString());
-
-        this.irc = new IRC(connection,this);
+        Path configsDir = Paths.get(config.dataDir);
+        if (!Files.isDirectory(configsDir)) {
+            Files.createDirectory(configsDir);
+        }
 
         // Start modules specified in the config
         for (String m : config.initModules) {
@@ -119,9 +177,6 @@ class NunuuBot implements BotInterface {
             case "PRIVMSG":
                 processPrivMessage(m);
                 break;
-            case "PONG":
-                System.out.println("Received pong...");
-                break;
             case "001":
                 if (!config.nickPassword.equals("")) {
                     irc.nickservIdentify(config.nickPassword);
@@ -144,8 +199,8 @@ class NunuuBot implements BotInterface {
             unloadModule(shortName);
         }
         String fullName = MODULES_PREFIX + "." + shortName + "Module";
-        Module m = Module.newModule(shortName+"Module",fullName,
-                config.useClassReloading,irc,this);
+        Module m = Module.newModule(shortName+"Module",
+                fullName,config.useClassReloading,this);
         modules.put(shortName,m);
         log(Level.INFO,"Modules: loaded " + shortName);
     }
@@ -203,56 +258,27 @@ class NunuuBot implements BotInterface {
         }
     }
 
-    // BotInterface
-
-    public String getNickname() {
-        return config.nickname;
-    }
-
-    public char getSpecialChar() {
-        return config.specialChar;
-    }
-
-    public String getCmdPrefix() {
-        return config.cmdPrefix;
-    }
-
-    public String getModuleDataDir() {
-        return DATA_DIR;
-    }
-
-    public void log(Level level,String msg) {
-        try {
-            logQueue.put(new LogRecord(level,msg));
-        } catch (InterruptedException e) {
-            System.err.println("Error writing to log");
-        }
-    }
-
-    public void logThrowable(Throwable e) {
-        log(Level.SEVERE,e.getClass().getSimpleName() + ": " + e.getMessage());
-        for (StackTraceElement s : e.getStackTrace()) {
-            log(Level.FINE,s.toString());
-        }
-    }
-
     // Main
 
     private void run()
     {
-        BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>();
-
         try {
             // Start logging in its own thread
             this.loggerThread = new Thread(new LoggerRunnable(
-                        this.getClass().getSimpleName(),
+                        getNickname(),
                         logQueue,
                         Level.parse(config.logStdLevel),
                         config.logFileDir,
                         Level.parse(config.logFileLevel),
                         config.newLogFileAtSizeKB));
             this.loggerThread.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
 
+        BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>();
+        try {
             // Connect to the server
             this.connectionThread = this.connection.start(
                     config.serverAddress,
@@ -260,34 +286,36 @@ class NunuuBot implements BotInterface {
                     config.hostPort,
                     msgQueue);
 
-            irc.sendUser(config.nickname,config.mode,config.realname);
-            irc.sendNick(config.nickname);
-
-            while (true) {
-                String line;
-                long millis;
-                while (true) { // try again if interrupted
-                    try {
-                        line = msgQueue.take();
-                        millis = System.currentTimeMillis();
-                        break; // success; break the infinite cycle
-                    } catch (InterruptedException e) { }
-                }
-                try {
-                    processLine(line,millis);
-                } catch (StopExecutingException e) {
-                    break;
-                } catch (Exception e) {
-                    logThrowable(e);
-                }
-            }
-
-            // Finish program
-            new Finisher().run();
-
-        } catch (IOException e) {
+            // Control+C hook
+            Runtime.getRuntime().addShutdownHook(new Thread(new Finisher()));
+        } catch (Exception e) {
             logThrowable(e);
         }
+
+        irc.sendUser(config.nickname,config.mode,config.realname);
+        irc.sendNick(config.nickname);
+
+        while (true) {
+            String line;
+            long millis;
+            while (true) { // try again if interrupted
+                try {
+                    line = msgQueue.take();
+                    millis = System.currentTimeMillis();
+                    break; // success; break the infinite cycle
+                } catch (InterruptedException e) { }
+            }
+            try {
+                processLine(line,millis);
+            } catch (StopExecutingException e) {
+                break;
+            } catch (Exception e) {
+                logThrowable(e);
+            }
+        }
+
+        // Finish program
+        new Finisher().run();
     }
 
     private class Finisher implements Runnable {
@@ -305,28 +333,21 @@ class NunuuBot implements BotInterface {
         }
     }
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
-        try {
-
-            // Read config file
-            Config newConfig = Config.read(CONFIG_FILE);
-
-            // Program instance
-            NunuuBot nunuubot = new NunuuBot(newConfig);
-
-            // Control+C hook
-            Runtime.getRuntime().addShutdownHook(
-                    new Thread(nunuubot.new Finisher()));
-
-            // Run the program (connect to server, start threads, etc)
-            nunuubot.run();
-
-        } catch (IOException e) {
-            System.err.println("IO error: " + e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
+        for (int i=0; i < args.length; i++) {
+            if (args[i].equals("-c") && ++i < args.length) {
+                configFilename = args[i];
+            }
         }
 
+        // Read config file
+        Config newConfig = Config.readJSON(configFilename);
+
+        // Program instance
+        Bot bot = new Bot(newConfig);
+
+        // Run the program (connect to server, start threads, etc)
+        bot.run();
     }
 }
