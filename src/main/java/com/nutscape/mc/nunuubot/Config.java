@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,37 +49,40 @@ class Config {
     });
 
     List<String> admins = Arrays.asList(new String[] {
-        "McNozes!~McNozes@chico.diogo"
+        ".*!.*@chico.diogo"
     });
+
+    List<Pattern> adminsRegex;
 
     String cmdPrefix = "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
 
     // --------------------------------------
 
-    /* Define a regex expresion that matches the prefix of a command */
-    private void setCmdPrefix() {
+    private void init(String configFilename) {
+        /* Define a regex expresion that matches the prefix of a command */
         this.cmdPrefix = "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
         if (specialChar == '\'') {
             throw new IllegalArgumentException(
                     "Cannot use that as special character.");
         }
-    }
 
-    /* Set the directory to which data files are written.
-     * Currently, it will use the filename (without extension) as the
-     * subdirectory of either the directory specified in the config file or
-     * ~/config/nunuubot.
-     * */
-    private void setDatadir(String configFilename) {
+        /* Set the directory to which data files are written.
+         * Currently, it will use the filename (without extension) as the
+         * subdirectory of either the directory specified in the config file or
+         * ~/config/nunuubot.
+         * */
         Path path = Paths.get(configFilename);
         String n = path.getFileName().toString();
         String botId = n.substring(0,n.lastIndexOf('.'));
         this.dataDir = botsDirname + "/" + botId;
-    }
 
-    private void setLogFileDir() {
         if (this.logFileDir == null) {
             this.logFileDir = this.dataDir;
+        }
+
+        this.adminsRegex = new ArrayList<Pattern>();
+        for (String s : admins) {
+            adminsRegex.add(Pattern.compile(s));
         }
     }
 
@@ -90,7 +94,8 @@ class Config {
         public boolean shouldSkipField(FieldAttributes f) {
             List<String> names = Arrays.asList(new String[] {
                 "exclusion",
-                "cmdPrefix"
+                "cmdPrefix",
+                "adminsRegex"
             });
             return names.contains(f.getName());
         }
@@ -124,9 +129,7 @@ class Config {
         if (in != null)
             in.close();
 
-        config.setCmdPrefix();
-        config.setDatadir(file);
-        config.setLogFileDir();
+        config.init(file);
         return config;
     }
 

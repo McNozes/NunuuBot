@@ -11,6 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.regex.Pattern;
 
 /**
  * Main program class.
@@ -133,6 +134,14 @@ public class Bot {
         }
     }
 
+    private boolean hasAdminMatch(String prefix) {
+        for (Pattern p : config.adminsRegex) {
+            if (p.matcher(prefix).matches())
+                return true;
+        }
+        return false;
+    }
+
     private void processPrivMessage(IncomingMessage m)
         throws StopExecutingException
     {
@@ -143,7 +152,7 @@ public class Bot {
         //}
 
         if (m.getDestination().equals(config.nickname)) {
-            if (config.admins.contains(m.getPrefix())) {
+            if (hasAdminMatch(m.getPrefix())) {
                 // Commands - admin only
                 adminCommand(m);
                 return;
