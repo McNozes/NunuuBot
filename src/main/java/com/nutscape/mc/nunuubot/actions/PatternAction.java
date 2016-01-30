@@ -20,6 +20,7 @@ class PatternAction extends Action {
     @Override
     public boolean accept(IncomingMessage m,String... args) {
         if (pattern.matcher(m.getContent()).matches()) {
+            // TODO: add log event
             return nextAction.accept(m,args);
         }
         return false;

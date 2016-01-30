@@ -16,14 +16,20 @@ public class HelloModule extends Module
         throws ModuleInstantiationException {
         super(bot);
 
+        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
+        fac.setIRC(bot.getIRC());
+
         Action olaAction = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
                 bot.getIRC().sendPrivMessage(
-                        m.getDestination(),"Olái, " + m.getNick()+"!");
+                        m.getDestination(),"Olá, " + m.getNick()+"!");
                 return true;
             }
         };
+        String hps = " *hello[ ,]* +" + bot.getNickname() + "[!.]*";
+        addPrivMsgAction(fac.newPatternAction(
+                    Pattern.compile(hps,Pattern.CASE_INSENSITIVE),olaAction));
 
         Action helloAction = new Action() {
             @Override
@@ -33,15 +39,8 @@ public class HelloModule extends Module
                 return true;
             }
         };
-
-        String hps = " *hello[ ,]* +" + bot.getNickname() + "[!.]*";
-        String ops = " *[oO][lL][aáAÁ][ ,]* +" + bot.getNickname() + "[!.]*";
-
-        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
-        fac.setIRC(bot.getIRC());
-        addCommand(fac.newActionPattern(
-                    Pattern.compile(hps,Pattern.CASE_INSENSITIVE),olaAction));
-        addCommand(fac.newActionPattern(
+        String ops = " *[oO][lL][aáAÁÀ][ ,]* +" + bot.getNickname() + "[ !.]*";
+        addPrivMsgAction(fac.newPatternAction(
                     Pattern.compile(ops,Pattern.CASE_INSENSITIVE),helloAction));
     }
 }

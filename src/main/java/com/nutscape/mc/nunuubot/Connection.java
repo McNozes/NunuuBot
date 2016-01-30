@@ -29,11 +29,13 @@ class Connection {
             BlockingQueue<String> msgQueue) throws IOException
     {
         Socket s = new Socket();
+        s.setReuseAddress(true);
         s.bind(new InetSocketAddress(hostPort));
         s.connect(new InetSocketAddress(serverAddress,serverPort));
         this.out = new OutputStreamWriter(s.getOutputStream());
 
-        Runnable fetcher = new MessageFetcher(s.getInputStream(),msgQueue,bot);
+        Runnable fetcher = 
+            new MessageFetcher(s.getInputStream(),msgQueue,bot,s);
         Thread thread = new Thread(fetcher);
         thread.start();
         return thread;
@@ -55,13 +57,16 @@ class Connection {
         private BlockingQueue<String> queue;
         private Bot bot;
         private boolean stop = false;
+        private Socket socket;
 
-        MessageFetcher(InputStream in,BlockingQueue<String> queue,Bot bot)
+        MessageFetcher(InputStream in,BlockingQueue<String> queue,Bot bot,
+                Socket socket)
             throws IOException
         {
             this.in = new BufferedReader(new InputStreamReader(in));
             this.queue = queue;
             this.bot = bot;
+            this.socket = socket;
         }
 
         public void run() {
@@ -78,6 +83,12 @@ class Connection {
             } catch (IOException e) {
                 bot.logThrowable(e);
             } catch (InterruptedException e) { }
+
+            try {
+                socket.close();
+            } catch (IOException e) {
+                bot.logThrowable(e);
+            }
             bot.log(Level.FINER,"Finishing Connection thread");
         }
     }

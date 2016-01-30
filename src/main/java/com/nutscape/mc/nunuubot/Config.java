@@ -37,6 +37,7 @@ class Config {
     int newLogFileAtSizeKB = 5*1024;
     String botsDirname = System.getProperty("user.home") + "/.config/nunuubot";
     String dataDir = botsDirname + "/nunuubot";
+    String version = "Im a bot";
 
     List<String> initModules = Arrays.asList(new String[] {
         "HelloModule",
@@ -51,6 +52,14 @@ class Config {
     List<String> admins = Arrays.asList(new String[] {
         ".*!.*@chico.diogo"
     });
+
+    List<String> knownBots = Arrays.asList(new String[] {
+        "NunuuBot"
+    });
+
+    List<String> ignoreList = Arrays.asList(new String[] {
+    });
+
 
     List<Pattern> adminsRegex;
 

@@ -26,9 +26,7 @@ import com.nutscape.mc.nunuubot.actions.ActionContainer;
  * TODO: make assynchronous.
  */
 public abstract class Module {
-    private final ActionContainer commands = new ActionContainer();
-    private final ActionContainer notices = new ActionContainer();
-
+    private ActionContainer mPrivMsg,mNotice,mKick; 
     protected Bot bot;
 
     protected Module(Bot bot) throws ModuleInstantiationException {
@@ -37,24 +35,35 @@ public abstract class Module {
 
     // ------------------
 
-    // Clients may override this (they can still call the 'superclass' version)
-    public void privMsg(IncomingMessage msg) {
-        commands.acceptAndReturnAtMatch(msg);
-    }
-    public void notice(IncomingMessage msg) {
-        notices.acceptAndReturnAtMatch(msg);
-    }
-
     // Clients may override this
-    public void finish() {
-        // Do nothing
+    public void finish() { }
+
+    // Clients may override this (they can still call the 'superclass' version)
+    public void privMsg(IncomingMessage m) {
+        if (mPrivMsg != null) { mPrivMsg.acceptAndReturnAtMatch(m); }
+    }
+    public void notice(IncomingMessage m) {
+        if (mNotice != null) { mNotice.acceptAndReturnAtMatch(m); }
+    }
+    public void kick(IncomingMessage m) {
+        if (mKick != null) { mKick.acceptAndReturnAtMatch(m); }
     }
 
-    protected void addCommand(Action action) {
-        commands.add(action);
+    //private void listenPrivMsg() { this.mPrivmsg = new ActionContainer(); }
+    //private void listenNotice() { this.mNotice = new ActionContainer(); }
+    //private void listenKick() { this.mKick = new ActionContainer(); }
+
+    protected void addPrivMsgAction(Action action) {
+        if (mPrivMsg == null) { mPrivMsg = new ActionContainer(); }
+        mPrivMsg.add(action);
     }
-    protected void addNotice(Action action) {
-        notices.add(action);
+    protected void addNoticeAction(Action action) {
+        if (mNotice == null) { mNotice = new ActionContainer(); }
+        mNotice.add(action);
+    }
+    protected void addKickAction(Action action) {
+        if (mKick == null) { mKick = new ActionContainer(); }
+        mKick.add(action);
     }
 
     // ------------------
@@ -192,12 +201,13 @@ public abstract class Module {
         {
             try {
                 /*
-                 * We have to make sure that this class loader is only called for
-                 * Module subclasses, even if we didn't call it for other classes.
-                 * This is because java will attempt to load classes referenced
-                 * by Modules using this loader and, if it does, they won't be
-                 * identified as the same classes as in other parts of the
-                 * program.
+                 * We have to make sure that this class loader is only called 
+                 * for subclasses of Module, even if we didn't call it for
+                 * other classes.
+                 * This is because java will attempt to load all classes
+                 * referenced * by Modules using this loader and, if it does,
+                 * they won't be * identified as the same classes as in other
+                 * parts of the program.
                  */
                 if (!fullName.matches(".*[.][^.]+Module([$].+)?$")) {
                     //System.out.println("doesn't match");
@@ -212,6 +222,10 @@ public abstract class Module {
 
                 /* Read the class definition. */
                 InputStream input = getClass().getResourceAsStream(binaryPath);
+                if (input == null) {
+                    bot.log(Level.SEVERE,"Module not found.");
+                    throw new NullPointerException();
+                }
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 for (int data; (data = input.read()) != -1;) {
                     buffer.write(data);
@@ -221,8 +235,8 @@ public abstract class Module {
 
                 return defineClass(fullName,classData,0,classData.length);
 
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException | NullPointerException e) {
+                bot.logThrowable(e);
             }
             return null;
         }

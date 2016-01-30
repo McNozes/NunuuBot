@@ -12,11 +12,11 @@ import com.nutscape.mc.nunuubot.actions.Action;
 import com.nutscape.mc.nunuubot.actions.ActionContainer;
 import com.nutscape.mc.nunuubot.actions.CommandFactory;
 
-public class UtilsModule extends Module implements NoticeReceiver
+public class UtilsModule extends Module
 {
     private void addPair(Action pair) {
-        addCommand(pair);
-        addNotice(pair);
+        addPrivMsgAction(pair);
+        addNoticeAction(pair);
     }
 
     public UtilsModule(Bot bot) 
@@ -25,7 +25,6 @@ public class UtilsModule extends Module implements NoticeReceiver
         CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
 
         // Add CTCP queries
-
         CTCP[] supportedQueries = new CTCP[] {
             CTCP.VERSION,
             CTCP.TIME,
@@ -54,7 +53,6 @@ public class UtilsModule extends Module implements NoticeReceiver
         }
 
         // PING
-
         Action ping = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
@@ -63,7 +61,6 @@ public class UtilsModule extends Module implements NoticeReceiver
                 return true;
             }
         };
-
         Action pingReply = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
@@ -76,12 +73,10 @@ public class UtilsModule extends Module implements NoticeReceiver
                 return true;
             }
         };
-
         addPair(fac.newQueryCommand("ping",
                     CTCP.PING.replyPattern,ping,pingReply));
 
         // HOST
-
         /* The host command just sends a ping to the target, and then
          * extracts the host from the prefix of the reply. */
         Action hostReply = new Action() {
@@ -96,7 +91,6 @@ public class UtilsModule extends Module implements NoticeReceiver
                     CTCP.PING.replyPattern,ping,hostReply));
 
         // WHOIS
-
         Action sendWhois = new Action() {
             @Override
             public boolean accept(IncomingMessage m,String... args) {
@@ -105,6 +99,38 @@ public class UtilsModule extends Module implements NoticeReceiver
             }
         };
         addPair(fac.newUserCommand("whois",sendWhois));
+
+        // AUTO-JOIN
+        Action autoJoin = new Action() {
+            @Override
+            public boolean accept(IncomingMessage m,String... args) {
+                String parts[] = m.getContent().split(" ");
+                if (parts[0].equals(bot.getNickname())) {
+                    bot.getIRC().join(m.getDestination());
+                }
+                return true;
+            }
+        };
+        //String kickRegex = "KICK +[^ ]+ +[ ^]( +:.*)?";
+        addKickAction(fac.newPatternAction(Pattern.compile(".*"),autoJoin));
+
+        // AUTO-CTCP RESPOND
+
+        Action versionRespond = new Action() {
+            @Override
+            public boolean accept(IncomingMessage m,String... args) {
+                String dest = m.getNick();
+                if (dest == null) {
+                    dest = m.getPrefix();
+                }
+                bot.getIRC().sendNotice(dest,"\001VERSION " + 
+                        bot.getVersion() + "\001");
+                return true;
+            }
+        };
+        
+        addPair(fac.newPatternAction(
+                    Pattern.compile("\001VERSION\001"),versionRespond));
     }
 }
 

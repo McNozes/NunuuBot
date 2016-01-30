@@ -28,8 +28,12 @@ public class CommandFactory {
 
     // --------------
 
-    public Action newActionPattern(Pattern pattern,Action action) {
+    public Action newPatternAction(Pattern pattern,Action action) {
         return new PatternAction(pattern,action);
+    }
+    public Action newPatternAction(String pattern,Action action) {
+        return new PatternAction(
+                Pattern.compile(pattern,Pattern.CASE_INSENSITIVE),action);
     }
 
     public Action newCommand(String cmd,Action action,int nargs,

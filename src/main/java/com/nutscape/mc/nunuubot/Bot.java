@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.regex.Pattern;
+import java.util.Collection;
 
 /**
  * Main program class.
@@ -34,11 +35,11 @@ public class Bot {
     /*
      * Settings
      */
-    private static final String VERSION_NUMBER = "0.4";
+    private static final String VERSION_NUMBER = "0.4.1";
     private static final String SOURCE_STRING = "github.com/McNozes/NunuuBot";
     private String VERSION_STRING = SOURCE_STRING + " " + VERSION_NUMBER;
 
-    private static String configFilename = "~/.config/nunuubot/nunuubot.json";
+    private static String configFilename = "~/.config/nunuubot/nunuutest.json";
     static {
         // Replace home
         configFilename = configFilename.replaceAll("^~/",
@@ -58,20 +59,15 @@ public class Bot {
      * Bot Interface
      */
 
-    public String getNickname() {
-        return config.nickname; }
+    public String getNickname()  { return config.nickname; }
+    public char getSpecialChar() { return config.specialChar; }
+    public String getCmdPrefix() { return config.cmdPrefix; }
+    public String getDataDir()   { return config.dataDir; }
+    public Collection<String> getKnownBots() { return config.knownBots; }
+    public IRC getIRC()          { return irc; }
 
-    public char getSpecialChar() {
-        return config.specialChar; }
-
-    public String getCmdPrefix() {
-        return config.cmdPrefix; }
-
-    public String getDataDir() {
-        return config.dataDir; }
-
-    public IRC getIRC() {
-        return irc; }
+    public String getVersion()   {
+        return config.version + " " + VERSION_NUMBER; }
 
     public void log(Level level,String msg) {
         try {
@@ -100,6 +96,11 @@ public class Bot {
     private final BlockingQueue<LogRecord> logQueue;
     private Thread loggerThread;
     private Thread connectionThread;
+    private final Admin admin = new Admin();
+
+    private final long timeoutMillis = 10*60*1000; // minutes*seconds*millis
+    private long timeOfLastPing;
+    private boolean reboot = false;
 
     /* This constructor will halt if a single module fails to initialize. */
     private Bot(Config config) throws Exception
@@ -125,71 +126,51 @@ public class Bot {
 
     // ----------
 
-    private void processNotice(IncomingMessage m) {
-        for (Map.Entry<String,Module> e : modules.entrySet()) {
-            Module mod = e.getValue();
-            if (mod instanceof NoticeReceiver) {
-                ((NoticeReceiver)mod).notice(m);
-            }
-        }
+    private boolean doReboot() {
+        return this.reboot;
     }
 
-    private boolean hasAdminMatch(String prefix) {
-        for (Pattern p : config.adminsRegex) {
-            if (p.matcher(prefix).matches())
-                return true;
-        }
-        return false;
-    }
-
-    private void processPrivMessage(IncomingMessage m)
-        throws StopExecutingException
-    {
-        //if (msg.equals("\001VERSION\001")) {
-        //    irc.sendNotice(prefix,"\001VERSION " + config.version
-        //            + " " + VERSION_NUMBER + "\001");
-        //    return;
-        //}
-
-        if (m.getDestination().equals(config.nickname)) {
-            if (hasAdminMatch(m.getPrefix())) {
-                // Commands - admin only
-                adminCommand(m);
-                return;
-            } else {
-                // Redirect messages to admins
-                for (String ad : config.admins) {
-                    irc.sendPrivMessage(ad,m.getNick() + ": "+ m.getContent());
-                }
-            }
-        }
-
-        // Send message to all modules.
-        for (Map.Entry<String,Module> entry : modules.entrySet()) {
-            entry.getValue().privMsg(m);
-        }
-    }
-
-    private void processLine(String line,long timestamp) 
+    private void processInput(String line,long timestamp) 
         throws IOException, StopExecutingException
     {
         IncomingMessage m = new IncomingMessage(line,timestamp);
 
         switch (m.getCommand())
         {
-            case "PING":  // TODO: check if it's my prefix?
+            case "NOTICE":
+                for (Map.Entry<String,Module> e : modules.entrySet()) {
+                    Module mod = e.getValue();
+                    mod.notice(m);
+                }
+                break;
+
+            case "PRIVMSG":
+                if (m.getDestination().equals(config.nickname)) {
+                    admin.privMsg(m);
+                }
+                // Send message to all modules.
+                for (Map.Entry<String,Module> entry : modules.entrySet()) {
+                    entry.getValue().privMsg(m);
+                }
+                break;
+
+            case "KICK":
+                for (Map.Entry<String,Module> entry : modules.entrySet()) {
+                    entry.getValue().kick(m);
+                }
+                break;
+
+            case "PING":
+                timeOfLastPing = timestamp;
                 irc.pong(m.getArguments());
                 break;
-            case "NOTICE":
-                processNotice(m);
-                break;
-            case "PRIVMSG":
-                processPrivMessage(m);
-                break;
+
             case "001":
+                // Identify
                 if (!config.nickPassword.equals("")) {
                     irc.nickservIdentify(config.nickPassword);
                 }
+                // Join all channels
                 for (String channel : config.initChannels) {
                     irc.join(channel);
                 }
@@ -225,47 +206,82 @@ public class Bot {
         return true;
     }
 
-    private void adminCommand(IncomingMessage m)
-        throws StopExecutingException
-    {
-        String[] cmd = m.getContent().split(" +",2);
-        switch (cmd[0]) {
-            case "load": case "l":
-                if (!config.useClassReloading)
-                    return;
-                try {
-                    loadModule(cmd[1]);
-                } catch (Module.ModuleInstantiationException e) {
-                    irc.sendPrivMessage(m.getNick(),
-                            "error: " + e.getCause().getMessage());
+    private class Admin {
+
+        private void privMsg(IncomingMessage m) throws StopExecutingException {
+            if (hasAdminPrivileges(m)) {
+                // Process command - admin only
+                adminCommand(m);
+                return;
+            } else {
+                // Redirect message to admins
+                for (String ad : config.admins) {
+                    irc.sendPrivMessage(ad,m.getNick() + ": "+ m.getContent());
                 }
-                break;
-            case "unload": case "u":
-                if (!config.useClassReloading)
-                    return;
-                if (!unloadModule(cmd[1])) {
-                    irc.sendPrivMessage(m.getNick(), "error unloading module");
-                }
-                break;
-            case "msg": case "m":
-                String[] parts = cmd[1].split(" +",2);
-                irc.sendPrivMessage(parts[0],parts[1]);
-                break;
-            case "join": case "j":
-                irc.join(cmd[1]);
-                break;
-            case "part": case "p":
-                irc.part(cmd[1]);
-                break;
-            case "version":
-                irc.sendPrivMessage(cmd[1],"\001VERSION\001");
-                break;
-            case "quit":
-                throw new StopExecutingException();
-            default:
-                break;
+            }
+        }
+
+        private boolean hasAdminPrivileges(IncomingMessage m) {
+            String prefix = m.getPrefix();
+
+            for (Pattern p : config.adminsRegex) {
+                if (p.matcher(prefix).matches())
+                    return true;
+            }
+            return false;
+        }
+
+        private void adminCommand(IncomingMessage m)
+            throws StopExecutingException
+        {
+            String[] cmd = m.getContent().split(" +",2);
+            switch (cmd[0]) {
+
+                case "load": case "l":
+                    if (!config.useClassReloading)
+                        return;
+                    try {
+                        loadModule(cmd[1]);
+                    } catch (Module.ModuleInstantiationException e) {
+                        irc.sendPrivMessage(m.getNick(),
+                                "error: " + e.getCause().getMessage());
+                    }
+                    break;
+
+                case "unload": case "u":
+                    if (!config.useClassReloading)
+                        return;
+                    if (!unloadModule(cmd[1])) {
+                        irc.sendPrivMessage(m.getNick(), "error unloading module");
+                    }
+                    break;
+
+                case "msg": case "m":
+                    String[] parts = cmd[1].split(" +",2);
+                    irc.sendPrivMessage(parts[0],parts[1]);
+                    break;
+
+                case "join": case "j":
+                    irc.join(cmd[1]);
+                    break;
+
+                case "part": case "p":
+                    irc.part(cmd[1]);
+                    break;
+
+                case "version":
+                    irc.sendPrivMessage(cmd[1],"\001VERSION\001");
+                    break;
+
+                case "quit":
+                    throw new StopExecutingException();
+
+                default:
+                    break;
+            }
         }
     }
+
 
     // Main
 
@@ -304,6 +320,9 @@ public class Bot {
         irc.sendUser(config.nickname,config.mode,config.realname);
         irc.sendNick(config.nickname);
 
+        timeOfLastPing = System.currentTimeMillis();
+        reboot = false;
+
         while (true) {
             String line;
             long millis;
@@ -314,8 +333,16 @@ public class Bot {
                     break; // success; break the infinite cycle
                 } catch (InterruptedException e) { }
             }
+
+            long dtPing = millis - timeOfLastPing;
+            if (dtPing > timeoutMillis) {
+                reboot = true;
+                log(Level.INFO,"Rebooting; delta millis = " + dtPing);
+                break;
+            }
+
             try {
-                processLine(line,millis);
+                processInput(line,millis);
             } catch (StopExecutingException e) {
                 break;
             } catch (Exception e) {
@@ -357,6 +384,8 @@ public class Bot {
         Bot bot = new Bot(newConfig);
 
         // Run the program (connect to server, start threads, etc)
-        bot.run();
+        do {
+            bot.run();
+        } while (bot.doReboot());
     }
 }

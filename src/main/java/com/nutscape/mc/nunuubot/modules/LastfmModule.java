@@ -67,14 +67,19 @@ public class LastfmModule extends Module
         fac.setIRC(bot.getIRC());
         String pf = "((lf)|(lfm)|(fm))";
         String mapString = bot.getSpecialChar() + "lfmset";
-        addCommand((fac.newMappedCommand(pf+"count",
+
+        addPrivMsgAction((fac.newMappedCommand(pf+"count",
                     userMap,mapString,playCountAction)));
-        addCommand(fac.newMappedCommand(pf+"?np",
+
+        addPrivMsgAction(fac.newMappedCommand(pf+"?np",
                     userMap,mapString,new NowPlayingAction(false)));
-        addCommand(fac.newMappedCommand(pf+"?npalbum",
+
+        addPrivMsgAction(fac.newMappedCommand(pf+"?npalbum",
                     userMap,mapString,new NowPlayingAction(true)));
-        addCommand(fac.newMapPutCommand(pf+"set",userMap,saveMap));
-        addCommand(fac.newDoubleMappedCommand(pf+"?compare",
+
+        addPrivMsgAction(fac.newMapPutCommand(pf+"set",userMap,saveMap));
+
+        addPrivMsgAction(fac.newDoubleMappedCommand(pf+"?compare",
                     userMap,mapString,compareAction));
     }
     // -----------

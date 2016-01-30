@@ -9,6 +9,51 @@ import java.util.regex.Pattern;
  * Immutable class (note: it's important that this be immutable).
  */
 public class IncomingMessage {
+
+    /** 'prefix' associated with message. May be a server prefix. */
+    public String getPrefix()      { return prefix; }
+
+    /** 'nickname' associated with message. */
+    public String getNick()        { return nick; }
+
+    /** 'username' associated with message (not necessarily 'nickname'). */
+    public String getUser()        { return user; }
+
+    /** 'hostname' associated with message. */
+    public String getHost()        { return host; }
+
+    /** "Type" of message. May be "PRIVMSG", "KICK", "NOTICE", etc */
+    public String getCommand()     { return command; }
+
+    /** All the text that comes after "type/command". */
+    public String getArguments()   { return arguments; }
+
+    /** Returns 'destination', which is part of some IRC messages (such as
+     * PRIVMSG).
+     * For example, messages in a chatroom #chat are of the form:
+     *
+     *   :prefix PRIVMSG #chat :message-content
+     *
+     * In this case, "#chat" is the destination.
+     */
+    public String getDestination() { return destination; }
+
+    /** Returns 'content', which is part of some IRC messages (such as
+     * PRIVMSG).
+     * For example, messages in a chatroom #chat are of the form:
+     *
+     *   :prefix PRIVMSG #chat :message-content
+     *
+     * In this case, "message-content" is the content. getContent() strips away
+     * the first ':'.
+     */
+    public String getContent()     { return content; }
+
+    /** Timestamp associated with message. */
+    public long getTimestamp()     { return timestamp; }
+
+    // -------------------------
+
     private String prefix = null;
     private String nick = null;
     private String user = null;
@@ -51,24 +96,16 @@ public class IncomingMessage {
             this.arguments = cmds[1];
         }
 
-        if (command.equals("NOTICE")  || command.equals("PRIVMSG")) {
-            String[] parts = arguments.split(" ",2);
+        if (command.equals("NOTICE")  || command.equals("PRIVMSG") || 
+                command.equals("KICK")) {
+            String[] parts = arguments.split(" +",2);
             this.destination = parts[0];
             this.content = stripColon(parts[1]);
         }
     }
 
     private static String stripColon(String s) {
-        return s.substring(1);
+        return s.charAt(0) == ':' ? s.substring(1) : s;
     }
 
-    public String getPrefix()      { return prefix; }
-    public String getNick()        { return nick; }
-    public String getUser()        { return user; }
-    public String getHost()        { return host; }
-    public String getCommand()     { return command; }
-    public String getArguments()   { return arguments; }
-    public String getDestination() { return destination; }
-    public String getContent()     { return content; }
-    public long getTimestamp()     { return timestamp; }
 }
