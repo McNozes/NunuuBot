@@ -19,7 +19,10 @@ class MapGetAction extends Action {
         this.mapCommandString = mapCommandString;
     }
 
-    // '@' skips the mapping action
+    /*
+     * '@' skips the mapping action.
+     * The mapped (or raw) 'value' is appended to the argument list.
+     */
     @Override
     public boolean accept(IncomingMessage m,String... args) {
         String key = args[argIndex];

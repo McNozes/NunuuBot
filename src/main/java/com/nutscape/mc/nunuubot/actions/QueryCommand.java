@@ -14,9 +14,8 @@ class QueryPairAction extends Action
     protected Map<String,String> map =
         new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    public QueryPairAction(String cmdPref,String word,Pattern replyPat,
+    public QueryPairAction(CommandFactory fac,String word,Pattern replyPat,
             Action ca,Action ra) {
-        CommandFactory fac = new CommandFactory(cmdPref);
         this.comnd = fac.newUserCommand(word,new QueryAction(ca));
         this.reply = new PatternAction(replyPat,new ReplyAction(ra));
     }

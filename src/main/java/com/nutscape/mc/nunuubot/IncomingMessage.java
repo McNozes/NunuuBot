@@ -96,16 +96,32 @@ public class IncomingMessage {
             this.arguments = cmds[1];
         }
 
-        if (command.equals("NOTICE")  || command.equals("PRIVMSG") || 
-                command.equals("KICK")) {
+        if (
+                command.equals("NOTICE") ||
+                command.equals("PRIVMSG") || 
+                command.equals("KICK") ||
+                command.equals("353")) {
             String[] parts = arguments.split(" +",2);
             this.destination = parts[0];
             this.content = stripColon(parts[1]);
         }
     }
 
-    private static String stripColon(String s) {
+    public static String stripColon(String s) {
         return s.charAt(0) == ':' ? s.substring(1) : s;
+    }
+
+    public String toString() {
+        return 
+            "prefix " + prefix + "\n" +
+            "nick " + nick + "\n" +
+            "user " + user + "\n" +
+            "host " + host + "\n" +
+            "command " + command + "\n" +
+            "arguments " + arguments + "\n" +
+            "destination " + destination  + "\n" +
+            "content " + content + "\n" +
+            "timestamp " + timestamp;
     }
 
 }

@@ -31,6 +31,7 @@ class Config {
     int hostPort = 50003;
     boolean useClassReloading = true;
     char specialChar = ':';
+    char noModSpecialChar = '.';
     String logStdLevel = "FINE";
     String logFileLevel = "ALL";
     String logFileDir = null;
@@ -63,17 +64,10 @@ class Config {
 
     List<Pattern> adminsRegex;
 
-    String cmdPrefix = "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
-
     // --------------------------------------
 
     private void init(String configFilename) {
         /* Define a regex expresion that matches the prefix of a command */
-        this.cmdPrefix = "^(" + nickname + "[^a-z0-9]?|[" + specialChar + "])";
-        if (specialChar == '\'') {
-            throw new IllegalArgumentException(
-                    "Cannot use that as special character.");
-        }
 
         /* Set the directory to which data files are written.
          * Currently, it will use the filename (without extension) as the
@@ -103,7 +97,6 @@ class Config {
         public boolean shouldSkipField(FieldAttributes f) {
             List<String> names = Arrays.asList(new String[] {
                 "exclusion",
-                "cmdPrefix",
                 "adminsRegex"
             });
             return names.contains(f.getName());

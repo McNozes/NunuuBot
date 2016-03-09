@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
@@ -35,11 +36,11 @@ public class Bot {
     /*
      * Settings
      */
-    private static final String VERSION_NUMBER = "0.4.1";
+    private static final String VERSION_NUMBER = "0.4.2";
     private static final String SOURCE_STRING = "github.com/McNozes/NunuuBot";
     private String VERSION_STRING = SOURCE_STRING + " " + VERSION_NUMBER;
 
-    private static String configFilename = "~/.config/nunuubot/nunuutest.json";
+    private static String configFilename = "~/.config/nunuubot/nunuubot.json";
     static {
         // Replace home
         configFilename = configFilename.replaceAll("^~/",
@@ -61,10 +62,43 @@ public class Bot {
 
     public String getNickname()  { return config.nickname; }
     public char getSpecialChar() { return config.specialChar; }
-    public String getCmdPrefix() { return config.cmdPrefix; }
+
+    public String getCmdPrefix() { return getCmdPrefix(config.specialChar); }
+
+    public String getCmdPrefix(char c) {
+        if (c == '\'') {
+            throw new IllegalArgumentException(
+                    "Cannot use that as special character.");
+        }
+        return "^(" + config.nickname + "[^a-z0-9]?|[" + c + "])";
+    }
+
     public String getDataDir()   { return config.dataDir; }
     public Collection<String> getKnownBots() { return config.knownBots; }
     public IRC getIRC()          { return irc; }
+    public boolean areBotsPresent(String channel)
+    {
+        Set<String> users = mUsersInChannel.get(channel).keySet();
+        if (users == null) {
+            return false;
+        }
+        for (String b : config.knownBots) {
+            if (users.contains(b)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public ChannelUser getChannelUser(String channel,String user) {
+        Map<String,ChannelUser> users = mUsersInChannel.get(channel);
+        if (users == null) { return null; }
+
+        ChannelUser chanUser = users.get(user);
+        if (users == null) { return null; }
+
+        return chanUser;
+    }
 
     public String getVersion()   {
         return config.version + " " + VERSION_NUMBER; }
@@ -98,9 +132,12 @@ public class Bot {
     private Thread connectionThread;
     private final Admin admin = new Admin();
 
-    private final long timeoutMillis = 10*60*1000; // minutes*seconds*millis
+    private final long TIMEOUT_MS = 10*60*1000; // minutes*seconds*millis
     private long timeOfLastPing;
     private boolean reboot = false;
+
+    private final Map<String,Map<String,ChannelUser>> mUsersInChannel =
+        new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     /* This constructor will halt if a single module fails to initialize. */
     private Bot(Config config) throws Exception
@@ -126,12 +163,8 @@ public class Bot {
 
     // ----------
 
-    private boolean doReboot() {
-        return this.reboot;
-    }
-
     private void processInput(String line,long timestamp) 
-        throws IOException, StopExecutingException
+        throws Exception, IOException, StopExecutingException
     {
         IncomingMessage m = new IncomingMessage(line,timestamp);
 
@@ -175,8 +208,58 @@ public class Bot {
                     irc.join(channel);
                 }
                 break;
+
+            case "353": {
+                String[] parts = m.getContent().split(" +",3);
+                addUsers(parts[1],
+                        m.getTimestamp(),
+                        IncomingMessage.stripColon(parts[2]).split(" "));
+                }
+                break;
+
+            case "PART":
+                removeUser(m.getArguments(),getUserName(m.getNick()));
+                break;
+
+            case "JOIN":
+                addUsers(
+                        IncomingMessage.stripColon(m.getArguments()),
+                        m.getTimestamp(),
+                        getUserName(m.getNick()));
+                break;
+
             default:
                 break;
+        }
+    }
+
+    /* Remove first character from nick */
+    private String getUserName(String user) {
+        char c = user.charAt(0);
+        if (c == '@' || c == '+' || c == '&' || c == '%') {
+            return user.substring(1);
+        }
+        return user;
+    }
+
+    /* Remove user from list of users in channel */
+    private void removeUser(String channel,String user) throws Exception {
+        if (!mUsersInChannel.containsKey(channel)) {
+            throw new Exception();
+        }
+        mUsersInChannel.get(channel).remove(user);
+    }
+
+    /* Add user to list of users in channel */
+    private void addUsers(String channel,long timestamp,String... users) {
+        if (!mUsersInChannel.containsKey(channel)) {
+            mUsersInChannel.put(
+                    channel,
+                    new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER));
+        }
+        for (String user : users) {
+            Map<String,ChannelUser> map = mUsersInChannel.get(channel);
+            map.put(getUserName(user),new ChannelUser(timestamp));
         }
     }
 
@@ -207,7 +290,6 @@ public class Bot {
     }
 
     private class Admin {
-
         private void privMsg(IncomingMessage m) throws StopExecutingException {
             if (hasAdminPrivileges(m)) {
                 // Process command - admin only
@@ -320,10 +402,10 @@ public class Bot {
         irc.sendUser(config.nickname,config.mode,config.realname);
         irc.sendNick(config.nickname);
 
-        timeOfLastPing = System.currentTimeMillis();
-        reboot = false;
+        // Check for PING/PONG timeouts
+        new TimeoutChecker();
 
-        while (true) {
+        while (!reboot) {
             String line;
             long millis;
             while (true) { // try again if interrupted
@@ -332,13 +414,6 @@ public class Bot {
                     millis = System.currentTimeMillis();
                     break; // success; break the infinite cycle
                 } catch (InterruptedException e) { }
-            }
-
-            long dtPing = millis - timeOfLastPing;
-            if (dtPing > timeoutMillis) {
-                reboot = true;
-                log(Level.INFO,"Rebooting; delta millis = " + dtPing);
-                break;
             }
 
             try {
@@ -354,8 +429,32 @@ public class Bot {
         new Finisher().run();
     }
 
+    private class TimeoutChecker implements Runnable {
+        void TimeoutChecker() {
+            timeOfLastPing = System.currentTimeMillis();
+            reboot = false;
+
+            (new java.util.concurrent.ScheduledThreadPoolExecutor(1))
+                .scheduleAtFixedRate(this,
+                        TIMEOUT_MS+100,
+                        TIMEOUT_MS/10,
+                        java.util.concurrent.TimeUnit.MILLISECONDS
+                        );
+        }
+
+        @Override
+        public void run() {
+            long dtPing = System.currentTimeMillis() - timeOfLastPing;
+            if (dtPing > TIMEOUT_MS) {
+                reboot = true;
+                log(Level.INFO,"Rebooting; delta millis = " + dtPing);
+            }
+        }
+    }
+
     private class Finisher implements Runnable {
-        @Override public void run() {
+        @Override
+        public void run() {
             finishAllModules();
             irc.quit(config.exitMessage);
             connectionThread.interrupt();
@@ -372,7 +471,8 @@ public class Bot {
     public static void main(String[] args) throws Exception
     {
         for (int i=0; i < args.length; i++) {
-            if (args[i].equals("-c") && ++i < args.length) {
+            String a = args[i];
+            if (a.equals("-c") || a.equals("--config") && ++i < args.length) {
                 configFilename = args[i];
             }
         }
@@ -386,6 +486,7 @@ public class Bot {
         // Run the program (connect to server, start threads, etc)
         do {
             bot.run();
-        } while (bot.doReboot());
+        } while (bot.reboot);
     }
 }
+

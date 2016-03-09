@@ -16,8 +16,7 @@ public class HelloModule extends Module
         throws ModuleInstantiationException {
         super(bot);
 
-        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
-        fac.setIRC(bot.getIRC());
+        CommandFactory fac = new CommandFactory(bot);
 
         Action olaAction = new Action() {
             @Override

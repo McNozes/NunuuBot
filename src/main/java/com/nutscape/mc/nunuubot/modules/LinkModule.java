@@ -23,9 +23,12 @@ import com.nutscape.mc.nunuubot.Module;
 import com.nutscape.mc.nunuubot.actions.Action;
 import com.nutscape.mc.nunuubot.actions.ActionContainer;
 import com.nutscape.mc.nunuubot.actions.CommandFactory;
+import com.nutscape.mc.nunuubot.HtmlUtils;
 
 public class LinkModule extends Module
 {
+    public static boolean deactivateWithKnownBots = true;
+
     /* title tags */
     private static String titleBeginTag = "(<title( +[^>]+=[^>]+)*>)";
     private static String titleEndTag = "(</title>)";
@@ -41,40 +44,40 @@ public class LinkModule extends Module
             "^\\shttps?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
     private Pattern urlPat = Pattern.compile(".*(https?://[^ ]+) *.*");
 
-    // -------------------------
-
     public LinkModule(Bot bot) throws ModuleInstantiationException
     {
         super(bot);
 
-        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
-        fac.setIRC(bot.getIRC());
-
-        /* Action: post title */
-        Action postLink = new Action() {
-            @Override
-            public boolean accept(IncomingMessage m,String... args) {
-                String nick = m.getNick();
-                if (bot.getKnownBots().contains(nick)) {
-                    return false;
-                }
-
-                try {
-                    bot.log(Level.FINE,"Fetching title...");
-                    String url = getPageTitle(m.getContent());
-                    if (!url.equals("")) {
-                        bot.getIRC().sendPrivMessage(m.getDestination(),
-                                "Title: " + IRC.Colors.bold(url));
-                    } 
-                } catch (Exception e) {
-                    bot.logThrowable(e);
-                }
-                return true;
-            }
-        };
+        CommandFactory fac = new CommandFactory(bot);
+        fac.ifNoOtherBotsAction = deactivateWithKnownBots;
 
         addPrivMsgAction(fac.newPatternAction(urlPat,postLink));
     }
+
+    // -------------------------
+
+    /* Action: post title */
+    private Action postLink = new Action() {
+        @Override
+        public boolean accept(IncomingMessage m,String... args) {
+            String nick = m.getNick();
+            if (bot.getKnownBots().contains(nick)) {
+                return false;
+            }
+
+            try {
+                bot.log(Level.FINE,"Fetching title...");
+                String url = getPageTitle(m.getContent());
+                if (!url.equals("")) {
+                    bot.getIRC().sendPrivMessage(m.getDestination(),
+                            "Title: " + IRC.Colors.bold(url));
+                } 
+            } catch (Exception e) {
+                bot.logThrowable(e);
+            }
+            return true;
+        }
+    };
 
     /*
      * Extract page title.
@@ -113,16 +116,13 @@ public class LinkModule extends Module
                 Matcher matcherBegin = titleBeginPat.matcher(line);
                 if (matcherBegin.matches()) {
                     //title = matcherBegin.group(2);
-                    System.out.println("*-" + line);
                     title = line.replaceFirst(".*" + titleBeginTag,"");
-                    System.out.println("--" + title);
                     addedLine = true;
                     inTitle = true;
                 } 
 
                 if (inTitle && !addedLine) {
                     title += line;
-                    System.out.println("**" + title);
                     addedLine = true;
                 }
 
@@ -134,9 +134,7 @@ public class LinkModule extends Module
                         addedLine = true;
                     }
                     */
-                    System.out.println("*-" + title);
                     title = title.replaceFirst(titleEndTag + ".*","");
-                    System.out.println("--" + title);
                     break;
                 } 
             }
@@ -144,6 +142,6 @@ public class LinkModule extends Module
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return title;
+        return HtmlUtils.substEscape(title);
     }
 }

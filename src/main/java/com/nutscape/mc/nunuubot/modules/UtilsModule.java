@@ -22,7 +22,7 @@ public class UtilsModule extends Module
     public UtilsModule(Bot bot) 
         throws ModuleInstantiationException {
         super(bot);
-        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
+        CommandFactory fac = new CommandFactory(bot);
 
         // Add CTCP queries
         CTCP[] supportedQueries = new CTCP[] {

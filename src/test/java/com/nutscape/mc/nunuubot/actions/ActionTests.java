@@ -67,6 +67,7 @@ public class ActionTests {
     }
 
     void getCmdArgumentsActionTest() {
+        /*
         resultString = "";
         Action action = new GetCmdArgumentsAction("prefix ",
                 concatenateThreeArguments);
@@ -75,11 +76,14 @@ public class ActionTests {
                 "PRIVMSG #McNozes :prefix cmd first second third",1);
         action.accept(m);
         assertEquals(resultString,"firstsecondthird");
+        */
     }
 
     void userCommandTest() {
+        /*
         resultString = "";
         CommandFactory fac = new CommandFactory("prefix ");
+        */
     }
 
     @Test

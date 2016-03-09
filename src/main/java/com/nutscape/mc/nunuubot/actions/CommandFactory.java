@@ -2,22 +2,33 @@ package com.nutscape.mc.nunuubot.actions;
 
 import com.nutscape.mc.nunuubot.IRC;
 import com.nutscape.mc.nunuubot.IncomingMessage;
+import com.nutscape.mc.nunuubot.Bot;
 import com.nutscape.mc.nunuubot.actions.Action;
 import com.nutscape.mc.nunuubot.actions.CommandFactory;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.regex.Pattern;
+import java.util.Scanner;
 
 public class CommandFactory {
+    public boolean ifNoOtherBotsAction = false;
     private String cmdPrefix;
     private IRC irc;
+    private Bot bot;
 
-    public CommandFactory(String cmdPrefix) {
+    public CommandFactory(Bot bot)
+    {
+        this.bot = bot;
+        this.irc = bot.getIRC();
+        this.cmdPrefix = bot.getCmdPrefix();
+    }
+
+    public void setCmdPrefix(String cmdPrefix) {
         this.cmdPrefix = cmdPrefix;
     }
 
-    public void setIRC(IRC irc) {
-        this.irc = irc;
-    }
+    // --------------
 
     private Pattern buildCmdPattern(String cmd) {
         StringBuilder builder = new StringBuilder();
@@ -28,27 +39,30 @@ public class CommandFactory {
 
     // --------------
 
-    public Action newPatternAction(Pattern pattern,Action action) {
-        return new PatternAction(pattern,action);
+    public Action newPatternAction(Pattern p,Action a) {
+        return new PatternAction(p,ifNoOtherBotsAction ?
+                new IfNoOtherBotsAction(bot,a) : a);
     }
-    public Action newPatternAction(String pattern,Action action) {
-        return new PatternAction(
-                Pattern.compile(pattern,Pattern.CASE_INSENSITIVE),action);
+
+    public Action newPatternAction(String p,Action a) {
+        return newPatternAction(Pattern.compile(p,Pattern.CASE_INSENSITIVE),a);
     }
 
     public Action newCommand(String cmd,Action action,int nargs,
             boolean usesOptionalTarget) {
         Pattern pattern = buildCmdPattern(cmd);
+
         Action check = usesOptionalTarget ? 
             new OptionalTargetCheckArgsAction(nargs,action) :
             new CheckArgsAction(nargs,action);
+
         Action getArgs = new GetCmdArgumentsAction(cmdPrefix,check);
         return new PatternAction(pattern,getArgs);
     }
 
     // Simple commands
 
-    /* Command of type 'cmd arg1, arg2, ..., arg_nargs' */
+    /* Command of type 'cmd arg_1, arg_2, ..., arg_nargs' */
     public Action newCommand(String cmd,int nargs,Action action) {
         return newCommand(cmd,action,nargs,false);
     }
@@ -58,7 +72,7 @@ public class CommandFactory {
         return newCommand(cmd,1,action);
     }
 
-    // Commands with option user
+    // Commands with optional target
 
     /* Command of type 'cmd arg1, ..., arg_nargs [target]' */
     public Action newUserCommand(String cmd,int nargs,Action action) {
@@ -75,16 +89,46 @@ public class CommandFactory {
     /* Command of type 'query [target]' */
     public Action newQueryCommand(String cmd,Pattern replyPat,
             Action ca,Action ra) {
-        return new QueryPairAction(cmdPrefix,cmd,replyPat,ca,ra);
+        return new QueryPairAction(this,cmd,replyPat,ca,ra);
     }
 
     // Maps
 
     /* Command of type 'cmd arg ... key ....arg ...' */
-    public Action newMappedCommand(String cmd,Map<String,String> map,
-            int argIndex,String mapCommandString, Action action) {
+    public Action newMappedCommand(
+            String cmd,
+            Map<String,String> map,
+            int argIndex,
+            String mapCommandString,
+            Action action)
+    {
         return newUserCommand(cmd,
                 new MapGetAction(irc,map,argIndex,mapCommandString,action));
+    }
+
+    /* Command with an optional user argument at the end. */
+    public Action newMappedCommand(
+            String cmd,
+            Map<String,String> map,
+            String mapCommandString,
+            Action action,
+            int nargs)
+    {
+        return newUserCommand(cmd,nargs,
+                new MapGetAction(irc,map,nargs-1,mapCommandString,action));
+    }
+
+    // TODO: delete?
+    public Action newMappedCommand(
+            String cmd,
+            Map<String,String> map,
+            int argIndex,
+            String mapCommandString,
+            Action action,
+            int nargs)
+    {
+        return newMappedCommand(cmd,map,0,mapCommandString,
+                new CheckArgsAction(nargs,action));
     }
 
     /* Command of type 'cmd [nick]' */
@@ -141,6 +185,7 @@ class CheckArgsAction extends Action {
     }
 }
 
+/* Appends nick of the sender if the number of arguments is nargs-1. */
 class OptionalTargetCheckArgsAction extends CheckArgsAction {
     OptionalTargetCheckArgsAction(int nargs,Action action) {
         super(nargs,action);
@@ -161,21 +206,73 @@ class OptionalTargetCheckArgsAction extends CheckArgsAction {
     }
 }
 
-// Retrieves arguments from the command (thus, ignores the prefix and the
-// first word).
+class IfNoOtherBotsAction extends Action {
+    private Bot bot;
+
+    IfNoOtherBotsAction(Bot bot,Action action) {
+        super(action);
+        this.bot = bot;
+    }
+
+    @Override
+    public boolean accept(IncomingMessage m,String... args) {
+        String channel = m.getDestination();
+        if (bot.areBotsPresent(channel)) {
+            return false;
+        }
+        return nextAction.accept(m,args);
+    }
+}
+
+/* Retrieves arguments from the command.
+ * In effect, deletes the prefix and the command word, then calls the next
+ * Action with the args argument as an array of arguments. It parses quotes
+ * (no capability of escaping quotes at the moment).
+ */
 class GetCmdArgumentsAction extends Action {
-    protected String cmdPrefix;
+    private String cmdPrefix;
+    private List<String> argList = new ArrayList<>();
+    private Pattern tokenRest = Pattern.compile("[^\"]*\"");
 
     GetCmdArgumentsAction(String cmdPrefix,Action action) {
         super(action);
         this.cmdPrefix = cmdPrefix;
     }
+    // ----------------
 
     @Override
     public boolean accept(IncomingMessage m,String... args) {
-        String noPrefix = m.getContent().replaceAll(cmdPrefix,"")
+        String argsNoPrefix = m.getContent()
+            .replaceAll(cmdPrefix,"")
             .replaceAll("^ +","");
-        String[] parts = noPrefix.split(" ");
+
+        argList.clear();
+
+        if (!evenNumberOfQuotes(argsNoPrefix)) {
+            System.err.println("Parse error: number of quotes.");
+            return false;
+        }
+
+        Scanner scan = new Scanner(argsNoPrefix);
+        while (scan.hasNext()) {
+            String token = scan.next();
+            if (token.charAt(0) == '\"' && !isQuoted(token)) {
+                token += scan.findInLine(tokenRest);
+            }
+            if (isQuoted(token)) {
+                token = token.substring(1,token.length()-1);
+            }
+            argList.add(token);
+        }
+
+        int n = argList.size();
+        String[] newArgs = new String[n-1];
+        for (int i=1; i < n; i++) {
+            newArgs[i-1] = argList.get(i);
+        }
+
+        /*
+        String[] parts = argsNoPrefix.split(" ");
         String[] newArgs;
         if (parts.length == 1 && parts[0].equals("")) {
             // Array of length zero:
@@ -186,6 +283,22 @@ class GetCmdArgumentsAction extends Action {
                 newArgs[i-1] = parts[i];
             }
         }
+        */
+
         return nextAction.accept(m,newArgs);
+    }
+
+    private boolean evenNumberOfQuotes(String s) {
+        int numberOfQuotes = 0;
+        for (int i = 0; i < s.length(); ++i) {
+            if (s.charAt(i) == '\"') {
+                ++numberOfQuotes;
+            }
+        }
+        return numberOfQuotes % 2 == 0;
+    }
+
+    private boolean isQuoted(String s) {
+        return s.charAt(0) == '\"' && s.charAt(s.length()-1) == '\"';
     }
 }

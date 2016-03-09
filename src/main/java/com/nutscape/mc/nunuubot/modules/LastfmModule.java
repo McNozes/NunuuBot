@@ -21,6 +21,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.NoSuchFileException;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -62,14 +65,16 @@ public class LastfmModule extends Module
         } catch (Exception e) {
             throw new ModuleInstantiationException(e);
         }
+        setActions(new CommandFactory(bot),bot.getSpecialChar());
+        // TODO: use ':' as special char
+    }
 
-        CommandFactory fac = new CommandFactory(bot.getCmdPrefix());
-        fac.setIRC(bot.getIRC());
+    private void setActions(CommandFactory fac,char specialChar) {
         String pf = "((lf)|(lfm)|(fm))";
-        String mapString = bot.getSpecialChar() + "lfmset";
+        String mapString = specialChar + "lfmset";
 
         addPrivMsgAction((fac.newMappedCommand(pf+"count",
-                    userMap,mapString,playCountAction)));
+                        userMap,mapString,playCountAction)));
 
         addPrivMsgAction(fac.newMappedCommand(pf+"?np",
                     userMap,mapString,new NowPlayingAction(false)));
@@ -81,7 +86,11 @@ public class LastfmModule extends Module
 
         addPrivMsgAction(fac.newDoubleMappedCommand(pf+"?compare",
                     userMap,mapString,compareAction));
+
+        addPrivMsgAction(fac.newMappedCommand(pf+"?top",
+                    userMap,mapString,utracksAction,3));
     }
+
     // -----------
 
     /* Show a user's play count. */
@@ -125,6 +134,62 @@ public class LastfmModule extends Module
         df.setTimeZone(TimeZone.getTimeZone("GMT"));
         return df.format(date);
     }
+
+    private Action utracksAction = new Action() {
+
+        List<String> types = Arrays.asList(new String[] {
+            "track","album","artist" });
+
+        List<String> periods = Arrays.asList(new String[] {
+            "7day","1month","3month","6month","12month" });
+
+        @Override
+        public boolean accept(IncomingMessage m,String... args) {
+            try {
+                String nick = args[2];
+                String target = args[3];
+
+                String type = args[0].toLowerCase();
+                if (!types.contains(type)) {
+                   bot.getIRC().sendPrivMessage(m.getDestination(),
+                           type + " not valid. Use " + types);
+                    return false;
+                }
+
+                String period = args[1].toLowerCase();
+                if (!periods.contains(period)) {
+                   bot.getIRC().sendPrivMessage(m.getDestination(),
+                           period + " not valid. Use " + periods);
+                    return false;
+                }
+
+                URL url = formBaseRequestURL("user.getTopTracks","&user=" +
+                        target + "&limit=" + 3);
+                JsonObject resp = makeJsonRequest(url);
+                if (resp.has("error")) {
+                    handleResponseError(resp,m);
+                    return true;
+                }
+                System.out.println(resp);
+                /*
+                   JsonObject userObject = resp.get("user").getAsJsonObject();
+                   String user = userObject.get("name").getAsString();
+                   String count = userObject.get("playcount").getAsString();
+                   String timeString = userObject.get("registered")
+                   .getAsJsonObject()
+                   .get("unixtime").getAsString();
+                   String formattedDate = unixtimeToDateString(timeString);
+
+                   bot.getIRC().sendPrivMessage(m.getDestination(),
+                   nick + ": " + count + " tracks played since " 
+                   + formattedDate);
+                   */
+            } catch (IOException e) {
+                bot.logThrowable(e);
+            }
+            return true;
+        }
+    };
 
     /* Show a comparison between two users. */
     private Action compareAction = new Action() {
@@ -182,7 +247,7 @@ public class LastfmModule extends Module
         }
     };
 
-    /* Show what the user is playing or has played */
+    /* Show what the user is playing or has played recently. */
     private class NowPlayingAction extends Action {
         private boolean album;
 
